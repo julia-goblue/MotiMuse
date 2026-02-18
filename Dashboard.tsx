@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState} from "react";
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from "react-native";
 import ProgressRing from "./ProgressRing";
+import BottomNav from "./BottomNav";
 
 export default function Dashboard() {
   const practiceMinutes = 47;
@@ -8,6 +9,14 @@ export default function Dashboard() {
   const progress = Math.round((practiceMinutes / goalMinutes) * 100);
 
   const weekData = [20, 40, 25, 30, 60, 15, 35];
+
+  const [activeTab, setActiveTab] = useState<
+  "home" | "music" | "box" | "profile" >("home");
+
+  const handleTabPress = (tab: "home" | "music" | "box" | "profile") => {
+  setActiveTab(tab);
+};
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -46,6 +55,10 @@ export default function Dashboard() {
       <TouchableOpacity style={styles.practiceButton}>
         <Text style={styles.practiceText}>Let’s Practice!</Text>
       </TouchableOpacity>
+
+            {/* Bottom Nav */}
+            <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
+
     </SafeAreaView>
   );
 }
