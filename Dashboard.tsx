@@ -1,9 +1,18 @@
-import React, { useState} from "react";
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import {
+  Pressable,
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import ProgressRing from "./ProgressRing";
 import BottomNav from "./BottomNav";
 
 export default function Dashboard() {
+  const navigation = useNavigation<any>();
+
   const practiceMinutes = 47;
   const goalMinutes = 60;
   const progress = Math.round((practiceMinutes / goalMinutes) * 100);
@@ -11,12 +20,12 @@ export default function Dashboard() {
   const weekData = [20, 40, 25, 30, 60, 15, 35];
 
   const [activeTab, setActiveTab] = useState<
-  "home" | "music" | "box" | "profile" >("home");
+    "home" | "music" | "box" | "profile"
+  >("home");
 
   const handleTabPress = (tab: "home" | "music" | "box" | "profile") => {
-  setActiveTab(tab);
-};
-
+    setActiveTab(tab);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -38,7 +47,7 @@ export default function Dashboard() {
         <ProgressRing progress={progress} minutes={practiceMinutes} />
       </View>
 
-      {/* Weekly Bars (Simple custom bars, no libs) */}
+      {/* Weekly Bars */}
       <View style={styles.barContainer}>
         {weekData.map((m, i) => (
           <View key={i} style={styles.barWrapper}>
@@ -52,13 +61,15 @@ export default function Dashboard() {
       </Text>
 
       {/* Practice Button */}
-      <TouchableOpacity style={styles.practiceButton}>
+      <Pressable
+        onPress={() => navigation.navigate("Timer")}
+        style={styles.practiceButton}
+      >
         <Text style={styles.practiceText}>Let’s Practice!</Text>
-      </TouchableOpacity>
+      </Pressable>
 
-            {/* Bottom Nav */}
-            <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
-
+      {/* Bottom Nav */}
+      <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
     </SafeAreaView>
   );
 }
@@ -83,10 +94,11 @@ const styles = StyleSheet.create({
   },
   statBox: {
     backgroundColor: "#EAFBB1",
-    paddingHorizontal: 12,
+    paddingHorizontal: 20,
     paddingVertical: 6,
     borderRadius: 10,
     marginLeft: 8,
+    marginTop: 40,
   },
   ringContainer: {
     alignItems: "center",
@@ -100,11 +112,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   barWrapper: {
-    width: 20,
+    width: 55,
     alignItems: "center",
   },
   bar: {
-    width: 18,
+    width: 30,
     backgroundColor: "#6EF2B2",
     borderRadius: 6,
   },
