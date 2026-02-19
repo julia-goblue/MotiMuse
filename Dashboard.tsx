@@ -25,6 +25,10 @@ export default function Dashboard() {
 
   const handleTabPress = (tab: "home" | "music" | "box" | "profile") => {
     setActiveTab(tab);
+
+    if (tab === "music") {
+      navigation.navigate("Timer");
+    }
   };
 
   return (

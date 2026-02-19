@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import BottomNav from "./BottomNav";
 
 const Timer = () => {
   const navigation = useNavigation<any>();
@@ -33,6 +34,20 @@ const Timer = () => {
     navigation.goBack();
   };
 
+
+  const [activeTab, setActiveTab] = useState<
+    "home" | "music" | "box" | "profile"
+  >("home");
+
+  const handleTabPress = (tab: "home" | "music" | "box" | "profile") => {
+    setActiveTab(tab);
+
+    if (tab === "home") {
+      navigation.navigate("Dashboard");
+    }
+  };
+
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Practice Timer</Text>
@@ -42,6 +57,9 @@ const Timer = () => {
       <Pressable style={styles.endButton} onPress={handleEndPractice}>
         <Text style={styles.endText}>End Practice</Text>
       </Pressable>
+
+      <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
+
     </View>
   );
 };
