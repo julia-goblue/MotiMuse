@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { Image, TextInput, View, Text, StyleSheet, Pressable } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import BottomNav from "./BottomNav";
 
 const Timer = () => {
   const navigation = useNavigation<any>();
   const [seconds, setSeconds] = useState(0);
+  const [text, setText] = useState('');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -34,7 +35,6 @@ const Timer = () => {
     navigation.goBack();
   };
 
-
   const [activeTab, setActiveTab] = useState<
     "home" | "music" | "box" | "profile"
   >("home");
@@ -47,18 +47,38 @@ const Timer = () => {
     }
   };
 
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Practice Timer</Text>
 
+       <Image
+        source={require('./assets/avatar.png')}
+        style={{ width: 200, height: 200 }}
+      />
+
+
+      <TextInput
+        style={styles.title}
+        placeholder="What piece are you practicing?"
+        value={text}
+        onChangeText={setText}
+      />
+
       <Text style={styles.timerText}>{formatTime()}</Text>
 
+      <View style={styles.layout}>
       <Pressable style={styles.endButton} onPress={handleEndPractice}>
-        <Text style={styles.endText}>End Practice</Text>
+        <Text style={styles.endText}>Pause</Text>
       </Pressable>
 
-      <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
+      <Pressable style={styles.endButton} onPress={handleEndPractice}>
+        <Text style={styles.endText}>End</Text>
+      </Pressable>
+      </View>
+
+       <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
+
+
 
     </View>
   );
@@ -67,6 +87,14 @@ const Timer = () => {
 export default Timer;
 
 const styles = StyleSheet.create({
+  layout: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 20,
+    alignItems: "center",
+    marginBottom: 20,
+  },
   container: {
     flex: 1,
     justifyContent: "center",
@@ -84,13 +112,13 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   endButton: {
-    backgroundColor: "#C94C4C",
+    backgroundColor: "#EAFBB1",
     paddingHorizontal: 30,
     paddingVertical: 14,
     borderRadius: 12,
   },
   endText: {
-    color: "white",
+    color: "666",
     fontSize: 16,
     fontWeight: "600",
   },
