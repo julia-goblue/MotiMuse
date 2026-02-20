@@ -1,11 +1,22 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from "react-native";
-import ProgressRing from "./ProgressRing";
+import { useNavigation } from "@react-navigation/native";
+import BottomNav from "./BottomNav";
 
-export default function Dashboard() {
-  const practiceMinutes = 47;
-  const goalMinutes = 60;
-  const progress = Math.round((practiceMinutes / goalMinutes) * 100);
+export default function Store() {
+  const navigation = useNavigation<any>();
+
+  const [activeTab, setActiveTab] = useState<
+      "home" | "music" | "box" | "profile"
+    >("home");
+  
+    const handleTabPress = (tab: "home" | "music" | "box" | "profile") => {
+      setActiveTab(tab);
+  
+       if (tab === "music") {
+        navigation.navigate("Timer");
+      }
+    };
 
   const st_colors = ["SUNSET", "OCEAN", "BUBBLEGUM", "EARTH"]; // hat color variants
 
@@ -26,7 +37,7 @@ export default function Dashboard() {
 
       {/* Big Avatar */}
       <View style={styles.ringContainer}>
-        <ProgressRing progress={progress} minutes={practiceMinutes} />
+        <Text style={styles.practiceText}>Big Avatar</Text>
       </View>
 
       {/* Store Block */}
@@ -75,14 +86,10 @@ export default function Dashboard() {
         </View>
       </View>
 
-      <Text style={styles.avgText}>
-        Average practice session this week: 54 minutes
-      </Text>
 
-      {/* Shop Button */}
-      <TouchableOpacity style={styles.practiceButton}>
-        <Text style={styles.practiceText}>Let’s Practice!</Text>
-      </TouchableOpacity>
+      {/* Shop Button or home bar */}
+      {/* Bottom Nav */}
+            <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
     </SafeAreaView>
   );
 }
