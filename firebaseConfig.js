@@ -32,4 +32,6 @@ const storage = getStorage(app); // Initialize storage
 
 const database = getDatabase(app);
 
-export { database, auth, db, storage };
+
+
+export { app, database, auth, db, storage };

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from "react-native";
+import { Image, View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import BottomNav from "./BottomNav";
 
@@ -8,14 +8,20 @@ export default function Store() {
 
   const [activeTab, setActiveTab] = useState<
       "home" | "music" | "box" | "profile"
-    >("home");
+    >("box");
   
     const handleTabPress = (tab: "home" | "music" | "box" | "profile") => {
       setActiveTab(tab);
-  
-       if (tab === "music") {
-        navigation.navigate("Timer");
-      }
+      
+    if (tab === "music") {
+      navigation.navigate("Timer");
+    }
+    if (tab === "home") {
+      navigation.navigate("Dashboard");
+    }
+    if (tab === "box") {
+      navigation.navigate("Store");
+    }
     };
 
   const st_colors = ["SUNSET", "OCEAN", "BUBBLEGUM", "EARTH"]; // hat color variants
@@ -37,51 +43,51 @@ export default function Store() {
 
       {/* Big Avatar */}
       <View style={styles.ringContainer}>
-        <Text style={styles.practiceText}>Big Avatar</Text>
+        <Image source={require("./assets/motimuse.png")} style={styles.big_img}/>
       </View>
 
       {/* Store Block */}
       <View style={styles.mainStore}>
         <View style={styles.storeRow}> {/* Row of color variants */}
           <TouchableOpacity style={styles.itemButton}>
-            <Text style={styles.practiceText}>Hat1</Text>
+            <Image source={require("./assets/OB_hat.png")} style={styles.hat_img}/>
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton}>
-            <Text style={styles.practiceText}>Hat1</Text>
+            <Image source={require("./assets/BB_hat.png")} style={styles.hat_img}/>
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton}>
-            <Text style={styles.practiceText}>Hat1</Text>
+            <Image source={require("./assets/GB_hat.png")} style={styles.hat_img}/>
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton}>
-            <Text style={styles.practiceText}>Hat1</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.storeRow}> {/* Row of color variants */}
-          <TouchableOpacity style={styles.itemButton}>
-            <Text style={styles.practiceText}>Hat1</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton}>
-            <Text style={styles.practiceText}>Hat1</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton}>
-            <Text style={styles.practiceText}>Hat1</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton}>
-            <Text style={styles.practiceText}>Hat1</Text>
+            <Image source={require("./assets/PB_hat.png")} style={styles.hat_img}/>
           </TouchableOpacity>
         </View>
         <View style={styles.storeRow}> {/* Row of color variants */}
           <TouchableOpacity style={styles.itemButton}>
-            <Text style={styles.practiceText}>Hat1</Text>
+            <Image source={require("./assets/OB_hat.png")} style={styles.hat_img}/>
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton}>
-            <Text style={styles.practiceText}>Hat1</Text>
+            <Image source={require("./assets/BB_hat.png")} style={styles.hat_img}/>
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton}>
-            <Text style={styles.practiceText}>Hat1</Text>
+            <Image source={require("./assets/GB_hat.png")} style={styles.hat_img}/>
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton}>
-            <Text style={styles.practiceText}>Hat1</Text>
+            <Image source={require("./assets/PB_hat.png")} style={styles.hat_img}/>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.storeRow}> {/* Row of color variants */}
+          <TouchableOpacity style={styles.itemButton}>
+            <Image source={require("./assets/OB_hat.png")} style={styles.hat_img}/>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.itemButton}>
+            <Image source={require("./assets/BB_hat.png")} style={styles.hat_img}/>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.itemButton}>
+            <Image source={require("./assets/GB_hat.png")} style={styles.hat_img}/>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.itemButton}>
+            <Image source={require("./assets/PB_hat.png")} style={styles.hat_img}/>
           </TouchableOpacity>
         </View>
       </View>
@@ -104,6 +110,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginHorizontal: 10,
   },
   title: {
     fontSize: 24,
@@ -144,38 +151,48 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: "#666",
   },
-  practiceButton: {
-    backgroundColor: "#1C7C6D",
-    padding: 16,
-    borderRadius: 14,
-    alignItems: "center",
-    marginTop: 20,
-  },
   practiceText: {
     color: "white",
     fontSize: 16,
     fontWeight: "600",
   },
   mainStore: {
-    backgroundColor: "#c3bfbf",
+    //backgroundColor: "#c3bfbf",
     justifyContent: "space-between",
-    alignItems: "flex-end",
-    marginTop: 10,
-    gap: 10,
+    alignItems: "center",
+    marginVertical: 10,
+    marginHorizontal: 10,
+    gap: 7,
   },
   storeRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-end",
-    marginTop: 10,
-    gap: 10,
+    alignItems: "center",
+    margin: 0,
+    gap: 5,
   },
   itemButton: {
-    backgroundColor: "#1C7C6D",
-    padding: 16,
+    //backgroundColor: "#299564",
     alignItems: "center",
-    marginTop: 20,
-    width: 20,
-    height: 20,
+    margin: 0,
+    width: 80,
+    height: 80,
+  },
+  hat_img: {
+    width: 90,
+    height: 90,
+    resizeMode: "contain",
+  },
+  selected_hat: { //when hats have transparent background and want selection shadow
+    width: 90,
+    height: 90,
+    resizeMode: "contain",
+    //filter: drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.3)),
+  },
+  big_img: {
+    width: 250,
+    height: 250,
+    resizeMode: "contain",
   },
 });
+
