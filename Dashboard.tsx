@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Pressable,
   View,
@@ -6,6 +6,8 @@ import {
   StyleSheet,
   SafeAreaView,
 } from "react-native";
+import { getDatabase, ref, onValue } from 'firebase/database';
+import { db, app } from './firebaseConfig';
 import { useNavigation } from "@react-navigation/native";
 import ProgressRing from "./ProgressRing";
 import BottomNav from "./BottomNav";
@@ -17,6 +19,55 @@ export default function Dashboard() {
   const goalMinutes = 60;
   const progress = Math.round((practiceMinutes / goalMinutes) * 100);
 
+  const [earnings, setEarnings] = useState(0); 
+  const [stars, setStars] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+
+    //    (e.g., if you're using Firebase Auth, you'd use `auth.currentUser.uid`)
+    const db = getDatabase(app);
+    const userStatsRef = ref(db, 'userStats/testUser1');
+
+    // 3. Attach a listener using onValue.
+    //    This function will be called immediately with the initial data,
+    //    and again every time the data at 'userStats/testUser1' changes.
+    const unsubscribe = onValue(userStatsRef, (snapshot) => {
+      if (snapshot.exists()) { // Check if data exists at the path
+        const data = snapshot.val();
+        console.log("Fetched data:", data); // Log the data to see what you received
+
+        // 4. Update your component's state with the fetched data.
+        //    Ensure the keys ('currentEarnings', 'totalStars') match your database structure.
+        setEarnings(data.currentEarnings || 0); // Use || 0 as a fallback if the key doesn't exist
+        setStars(data.totalStars || 0);
+        setLoading(false); // Data has been loaded
+      } else {
+        console.log("No data available at 'userStats/testUser1'");
+        setEarnings(0);
+        setStars(0);
+        setLoading(false); // Loading complete, but no data
+      }
+    }, (databaseError) => {
+      // 5. Handle any errors during the data fetch
+      console.error("Error fetching user stats:", databaseError);
+      setLoading(false);
+    });
+
+    // 6. Return a cleanup function.
+    //    This is crucial for real-time listeners to prevent memory leaks.
+    //    When the component unmounts (is removed from the screen),
+    //    this function will be called to detach the listener.
+    return () => {
+      console.log("Detaching Firebase listener.");
+      unsubscribe();
+    };
+  }, []); // The empty dependency array `[]` means this effect runs ONLY ONCE after the initial render.
+  
+  
+
+
   const weekData = [20, 40, 25, 30, 60, 15, 35];
 
   const [activeTab, setActiveTab] = useState<
@@ -26,7 +77,7 @@ export default function Dashboard() {
   const handleTabPress = (tab: "home" | "music" | "box" | "profile") => {
     setActiveTab(tab);
 
-     if (tab === "music") {
+    if (tab === "music") {
       navigation.navigate("Timer");
     }
     if (tab === "box") {
@@ -41,10 +92,10 @@ export default function Dashboard() {
         <Text style={styles.title}>This Week</Text>
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
-            <Text>💰 105</Text>
+            <Text>💰 {earnings}</Text>
           </View>
           <View style={styles.statBox}>
-            <Text>⭐ 9</Text>
+            <Text>⭐ {stars}</Text>
           </View>
         </View>
       </View>
@@ -88,6 +139,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   header: {
+    marginHorizontal: 10,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -133,7 +185,7 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   practiceButton: {
-    backgroundColor: "#1C7C6D",
+    backgroundColor: "#20826c",
     padding: 16,
     borderRadius: 14,
     alignItems: "center",
