@@ -37,7 +37,7 @@ export default function Store() {
 
       {/* Big Avatar */}
       <View style={styles.ringContainer}>
-        <Text style={styles.practiceText}>Big Avatar</Text>
+        <Image source={require("./assets/motimuse.png")} style={styles.practiceText} />
       </View>
 
       {/* Store Block */}
