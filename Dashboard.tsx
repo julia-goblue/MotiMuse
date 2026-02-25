@@ -29,6 +29,9 @@ export default function Dashboard() {
      if (tab === "music") {
       navigation.navigate("Timer");
     }
+    if (tab === "box") {
+      navigation.navigate("Store");
+    }
   };
 
   return (

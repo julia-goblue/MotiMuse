@@ -1,4 +1,8 @@
 import React, { useState } from "react";
+import { auth, db } from "./firebaseConfig"; 
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc, collection, addDoc } from "firebase/firestore";
+
 import {
   SafeAreaView,
   View,
@@ -61,11 +65,15 @@ export function LoginScreen() {
           </Pressable>
 
           <Pressable
-            onPress={() => {
-              // TODO: your auth action
+            onPress={async () => {
+            try {
+              await signInWithEmailAndPassword(auth, email, password);
               navigation.navigate("Dashboard");
-            }}
-            style={styles.primaryButton}
+            } catch (error: any) {
+              console.log(error.message);
+            }
+          }}
+          style={styles.primaryButton}
           >
             <Text style={styles.primaryText}>Continue</Text>
           </Pressable>
@@ -138,9 +146,31 @@ export function SignUpScreen() {
           />
 
           <Pressable
-            onPress={() => {
-              // TODO: your auth action
-              navigation.navigate("Dashboard");
+            onPress={async () => {
+              try {
+                // 1️Create user in Firebase Auth
+                const userCredential = await createUserWithEmailAndPassword(
+                  auth,
+                  email,
+                  password
+                );
+
+                const user = userCredential.user;
+
+                // Add user to Firestore
+                await addDoc(collection(db, "users"), {
+                  uid: user.uid,
+                  name: name,
+                  email: email,
+                  createdAt: new Date(),
+                });
+
+                // Navigate
+                navigation.navigate("Dashboard");
+
+              } catch (error: any) {
+                console.log(error.message);
+              }
             }}
             style={styles.primaryButton}
           >
