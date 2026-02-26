@@ -12,10 +12,22 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  Image,
+  ScrollView,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
 type Nav = any;
+
+function OrDivider() {
+  return (
+    <View style={styles.orRow}>
+      <View style={styles.orLine} />
+      <Text style={styles.orText}>OR</Text>
+      <View style={styles.orLine} />
+    </View>
+  );
+}
 
 export function LoginScreen() {
   const navigation = useNavigation<Nav>();
@@ -28,11 +40,12 @@ export function LoginScreen() {
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={styles.header}>
+        
+        {/* <View style={styles.header}>
           <Text style={styles.title}>Welcome Back</Text>
           <View style={styles.statsRow}>
           </View>
-        </View>
+        </View> */}
 
         {/* Card */}
         <View style={styles.card}>
@@ -199,6 +212,7 @@ const styles = StyleSheet.create({
 
   // matches Dashboard header
   header: {
+    marginHorizontal: 10,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -262,13 +276,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   linkText: {
-    color: "#1C7C6D", // same as practiceButton
+    color: "#20826c", // same as practiceButton
     fontWeight: "600",
   },
 
   // matches Dashboard practiceButton
   primaryButton: {
-    backgroundColor: "#1C7C6D",
+    backgroundColor: "#20826c",
     padding: 16,
     borderRadius: 14,
     alignItems: "center",
@@ -291,7 +305,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   switchLink: {
-    color: "#1C7C6D",
+    color: "#20826c",
     fontWeight: "600",
   },
 });
