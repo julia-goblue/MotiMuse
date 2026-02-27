@@ -43,11 +43,7 @@ export default function Store() {
 
       {/* Big Avatar */}
       <View style={styles.ringContainer}>
-<<<<<<< HEAD
-        <Image source={require("./assets/motimuse.png")} style={styles.practiceText} />
-=======
         <Image source={require("./assets/motimuse.png")} style={styles.big_img}/>
->>>>>>> 24edc179d45283a4170b7640097dcbfcdf878f4f
       </View>
 
       {/* Store Block */}
@@ -68,30 +64,30 @@ export default function Store() {
         </View>
         <View style={styles.storeRow}> {/* Row of color variants */}
           <TouchableOpacity style={styles.itemButton}>
-            <Image source={require("./assets/OB_hat.png")} style={styles.hat_img}/>
+            <Image source={require("./assets/OG_hat.png")} style={styles.hat_img}/>
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton}>
-            <Image source={require("./assets/BB_hat.png")} style={styles.hat_img}/>
+            <Image source={require("./assets/BG_hat.png")} style={styles.hat_img}/>
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton}>
-            <Image source={require("./assets/GB_hat.png")} style={styles.hat_img}/>
+            <Image source={require("./assets/GG_hat.png")} style={styles.hat_img}/>
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton}>
-            <Image source={require("./assets/PB_hat.png")} style={styles.hat_img}/>
+            <Image source={require("./assets/PG_hat.png")} style={styles.hat_img}/>
           </TouchableOpacity>
         </View>
         <View style={styles.storeRow}> {/* Row of color variants */}
           <TouchableOpacity style={styles.itemButton}>
-            <Image source={require("./assets/OB_hat.png")} style={styles.hat_img}/>
+            <Image source={require("./assets/OC_hat.png")} style={styles.hat_img}/>
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton}>
-            <Image source={require("./assets/BB_hat.png")} style={styles.hat_img}/>
+            <Image source={require("./assets/BC_hat.png")} style={styles.hat_img}/>
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton}>
-            <Image source={require("./assets/GB_hat.png")} style={styles.hat_img}/>
+            <Image source={require("./assets/GC_hat.png")} style={styles.hat_img}/>
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton}>
-            <Image source={require("./assets/PB_hat.png")} style={styles.hat_img}/>
+            <Image source={require("./assets/PC_hat.png")} style={styles.hat_img}/>
           </TouchableOpacity>
         </View>
       </View>
@@ -191,7 +187,10 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
     resizeMode: "contain",
-    //filter: drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.3)),
+    shadowColor: "#76b9d3",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6, // may need to be changed for Android
   },
   big_img: {
     width: 250,
