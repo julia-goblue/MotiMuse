@@ -26,6 +26,9 @@ export default function Store() {
 
   const st_colors = ["SUNSET", "OCEAN", "BUBBLEGUM", "EARTH"]; // hat color variants
 
+  const [selectedHat, setSelectedHat] = useState<string | null>(null);
+  const handleSelectHat = (hatId: string) => {setSelectedHat(hatId);};
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -49,45 +52,57 @@ export default function Store() {
       {/* Store Block */}
       <View style={styles.mainStore}>
         <View style={styles.storeRow}> {/* Row of color variants */}
-          <TouchableOpacity style={styles.itemButton}>
-            <Image source={require("./assets/OB_hat.png")} style={styles.hat_img}/>
+          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("OB")}>
+            <Image source={require("./assets/OB_hat.png")}
+              style={[ styles.hat_img, selectedHat === "OB" && styles.selected_hat ]} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton}>
-            <Image source={require("./assets/BB_hat.png")} style={styles.hat_img}/>
+          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("BB")}>
+            <Image source={require("./assets/BB_hat.png")}
+              style={[ styles.hat_img, selectedHat === "BB" && styles.selected_hat ]} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton}>
-            <Image source={require("./assets/GB_hat.png")} style={styles.hat_img}/>
+          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("GB")}>
+            <Image source={require("./assets/GB_hat.png")}
+              style={[ styles.hat_img, selectedHat === "GB" && styles.selected_hat ]} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton}>
-            <Image source={require("./assets/PB_hat.png")} style={styles.hat_img}/>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.storeRow}> {/* Row of color variants */}
-          <TouchableOpacity style={styles.itemButton}>
-            <Image source={require("./assets/OG_hat.png")} style={styles.hat_img}/>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton}>
-            <Image source={require("./assets/BG_hat.png")} style={styles.hat_img}/>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton}>
-            <Image source={require("./assets/GG_hat.png")} style={styles.hat_img}/>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton}>
-            <Image source={require("./assets/PG_hat.png")} style={styles.hat_img}/>
+          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("PB")}>
+            <Image source={require("./assets/PB_hat.png")}
+              style={[ styles.hat_img, selectedHat === "PB" && styles.selected_hat ]} />
           </TouchableOpacity>
         </View>
         <View style={styles.storeRow}> {/* Row of color variants */}
-          <TouchableOpacity style={styles.itemButton}>
-            <Image source={require("./assets/OC_hat.png")} style={styles.hat_img}/>
+          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("OG")}>
+            <Image source={require("./assets/OG_hat.png")}
+              style={[ styles.hat_img, selectedHat === "OG" && styles.selected_hat ]} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton}>
-            <Image source={require("./assets/BC_hat.png")} style={styles.hat_img}/>
+          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("BG")}>
+            <Image source={require("./assets/BG_hat.png")}
+              style={[ styles.hat_img, selectedHat === "BG" && styles.selected_hat ]} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton}>
-            <Image source={require("./assets/GC_hat.png")} style={styles.hat_img}/>
+          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("GG")}>
+            <Image source={require("./assets/GG_hat.png")}
+              style={[ styles.hat_img, selectedHat === "GG" && styles.selected_hat ]} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton}>
-            <Image source={require("./assets/PC_hat.png")} style={styles.hat_img}/>
+          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("PG")}>
+            <Image source={require("./assets/PG_hat.png")}
+              style={[ styles.hat_img, selectedHat === "PG" && styles.selected_hat ]} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.storeRow}> {/* Row of color variants */}
+          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("OC")}>
+            <Image source={require("./assets/OC_hat.png")}
+              style={[ styles.hat_img, selectedHat === "OC" && styles.selected_hat ]} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("BC")}>
+            <Image source={require("./assets/BC_hat.png")}
+              style={[ styles.hat_img, selectedHat === "BC" && styles.selected_hat ]} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("GC")}>
+            <Image source={require("./assets/GC_hat.png")}
+              style={[ styles.hat_img, selectedHat === "GC" && styles.selected_hat ]} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("PC")}>
+            <Image source={require("./assets/PC_hat.png")}
+              style={[ styles.hat_img, selectedHat === "PC" && styles.selected_hat ]} />
           </TouchableOpacity>
         </View>
       </View>
@@ -190,7 +205,8 @@ const styles = StyleSheet.create({
     shadowColor: "#76b9d3",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
-    shadowRadius: 6, // may need to be changed for Android
+    shadowRadius: 6, 
+    elevation: 8, //added for Android
   },
   big_img: {
     width: 250,
