@@ -1,7 +1,12 @@
 import React, { useState } from "react";
-import { auth, db } from "./firebaseConfig"; 
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, collection, addDoc } from "firebase/firestore";
+
+import { auth, db } from "./firebaseConfig";
+
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
+import { collection, addDoc } from "firebase/firestore";
 
 import {
   SafeAreaView,
@@ -19,89 +24,95 @@ import { useNavigation } from "@react-navigation/native";
 
 type Nav = any;
 
-function OrDivider() {
-  return (
-    <View style={styles.orRow}>
-      <View style={styles.orLine} />
-      <Text style={styles.orText}>OR</Text>
-      <View style={styles.orLine} />
-    </View>
-  );
-}
+// ===== IMAGE (adjust if needed) =====
+const LOGIN_IMAGE = require("./assets/login.png");
+
+// =====================================================
+// LOGIN SCREEN
+// =====================================================
 
 export function LoginScreen() {
   const navigation = useNavigation<Nav>();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  async function handleSignIn() {
+    try {
+      if (!email || !password) {
+        console.log("Missing email or password");
+        return;
+      }
+
+      await signInWithEmailAndPassword(auth, email, password);
+      navigation.navigate("Dashboard");
+    } catch (error: any) {
+      console.log("Login error:", error?.message ?? error);
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
-        style={styles.container}
+        style={styles.inner}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        
-        {/* <View style={styles.header}>
-          <Text style={styles.title}>Welcome Back</Text>
-          <View style={styles.statsRow}>
-          </View>
-        </View> */}
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Graphic */}
+          <Image source={LOGIN_IMAGE} style={styles.hero} resizeMode="contain" />
 
-        {/* Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Log In</Text>
+          {/* Title */}
+          <Text style={styles.title}>MotiMuse</Text>
+          <Text style={styles.subtitle}>Transform practice into play!</Text>
 
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder="you@email.com"
-            placeholderTextColor="#888"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            style={styles.input}
-          />
+          {/* Form */}
+          <View style={styles.form}>
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Email"
+              placeholderTextColor="#7AAEA3"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              style={styles.input}
+            />
 
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            placeholder="••••••••"
-            placeholderTextColor="#888"
-            secureTextEntry
-            style={styles.input}
-          />
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Password"
+              placeholderTextColor="#7AAEA3"
+              secureTextEntry
+              style={styles.input}
+            />
 
-          <Pressable style={styles.linkBtn} onPress={() => {}}>
-            <Text style={styles.linkText}>Forgot password?</Text>
-          </Pressable>
-
-          <Pressable
-            onPress={async () => {
-            try {
-              await signInWithEmailAndPassword(auth, email, password);
-              navigation.navigate("Dashboard");
-            } catch (error: any) {
-              console.log(error.message);
-            }
-          }}
-          style={styles.primaryButton}
-          >
-            <Text style={styles.primaryText}>Continue</Text>
-          </Pressable>
-
-          <View style={styles.switchRow}>
-            <Text style={styles.switchText}>New here?</Text>
-            <Pressable onPress={() => navigation.navigate("SignUp")}>
-              <Text style={styles.switchLink}>Sign up</Text>
+            <Pressable style={styles.forgotWrap}>
+              <Text style={styles.forgot}>Forgot password?</Text>
             </Pressable>
+
+            <Pressable style={styles.primaryButton} onPress={handleSignIn}>
+              <Text style={styles.primaryText}>Sign In</Text>
+            </Pressable>
+
+            <View style={styles.switchRow}>
+              <Text style={styles.switchText}>Don’t have an account? </Text>
+              <Pressable onPress={() => navigation.navigate("SignUp")}>
+                <Text style={styles.switchLink}>Sign up</Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
+
+// =====================================================
+// SIGN UP SCREEN
+// =====================================================
 
 export function SignUpScreen() {
   const navigation = useNavigation<Nav>();
@@ -109,203 +120,187 @@ export function SignUpScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  async function handleSignUp() {
+    try {
+      if (!name || !email || !password) {
+        console.log("Missing fields");
+        return;
+      }
+
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      const user = userCredential.user;
+
+      await addDoc(collection(db, "users"), {
+        uid: user.uid,
+        name,
+        email,
+        createdAt: new Date(),
+      });
+
+      navigation.navigate("ProfileInfoScreen");
+    } catch (error: any) {
+      console.log("Signup error:", error?.message ?? error);
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
-        style={styles.container}
+        style={styles.inner}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Create Account</Text>
-          <View style={styles.statsRow}>
-          </View>
-        </View>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={[styles.title, { marginTop: 40 }]}>Create Account</Text>
 
-        {/* Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Sign Up</Text>
+          <View style={styles.form}>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder="Name"
+              placeholderTextColor="#7AAEA3"
+              autoCapitalize="words"
+              style={styles.input}
+            />
 
-          <Text style={styles.label}>Name</Text>
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder="Julia"
-            placeholderTextColor="#888"
-            autoCapitalize="words"
-            style={styles.input}
-          />
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Email"
+              placeholderTextColor="#7AAEA3"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              style={styles.input}
+            />
 
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder="you@email.com"
-            placeholderTextColor="#888"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            style={styles.input}
-          />
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Password"
+              placeholderTextColor="#7AAEA3"
+              secureTextEntry
+              style={styles.input}
+            />
 
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Create a password"
-            placeholderTextColor="#888"
-            secureTextEntry
-            style={styles.input}
-          />
-
-          <Pressable
-            onPress={async () => {
-              try {
-                // 1️Create user in Firebase Auth
-                const userCredential = await createUserWithEmailAndPassword(
-                  auth,
-                  email,
-                  password
-                );
-
-                const user = userCredential.user;
-
-                // Add user to Firestore
-                await addDoc(collection(db, "users"), {
-                  uid: user.uid,
-                  name: name,
-                  email: email,
-                  createdAt: new Date(),
-                });
-
-                // Navigate
-                navigation.navigate("Dashboard");
-
-              } catch (error: any) {
-                console.log(error.message);
-              }
-            }}
-            style={styles.primaryButton}
-          >
-            <Text style={styles.primaryText}>Create Account</Text>
-          </Pressable>
-
-          <View style={styles.switchRow}>
-            <Text style={styles.switchText}>Already have an account?</Text>
-            <Pressable onPress={() => navigation.navigate("Login")}>
-              <Text style={styles.switchLink}>Log in</Text>
+            <Pressable style={styles.primaryButton} onPress={handleSignUp}>
+              <Text style={styles.primaryText}>Create Account</Text>
             </Pressable>
+
+            <View style={styles.switchRow}>
+              <Text style={styles.switchText}>Already have an account? </Text>
+              <Pressable onPress={() => navigation.navigate("Login")}>
+                <Text style={styles.switchLink}>Log in</Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
+// =====================================================
+// STYLES
+// =====================================================
+
+const BRAND = "#1F7A6B";
+const BORDER = "#2E8B7E";
+
 const styles = StyleSheet.create({
-  // matches Dashboard container
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
-    padding: 20,
+    backgroundColor: "#F7FBF9",
   },
-
-  // matches Dashboard header
-  header: {
-    marginHorizontal: 10,
-    flexDirection: "row",
-    justifyContent: "space-between",
+  inner: {
+    flex: 1,
+  },
+  scroll: {
+    paddingHorizontal: 24,
+    paddingBottom: 40,
     alignItems: "center",
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "600",
-  },
-  statsRow: {
-    flexDirection: "row",
-  },
-  statBox: {
-    backgroundColor: "#EAFBB1", // same as Dashboard statBox
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 10,
-    marginLeft: 8,
-    marginTop: 40, // keeps the same "floating pill" feel
-  },
-  statText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
 
-  // card that fits your soft UI
-  card: {
-    marginTop: 26,
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#EDEDED",
-    backgroundColor: "#FFFFFF",
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-
-  label: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#666",
-    marginTop: 12,
-    marginBottom: 6,
-  },
-  input: {
-    height: 48,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#EDEDED",
-    paddingHorizontal: 14,
-    fontSize: 15,
-    color: "#111",
-  },
-
-  linkBtn: {
-    alignSelf: "flex-end",
+  hero: {
+    width: "100%",
+    height: 220,
     marginTop: 10,
-    paddingVertical: 6,
-    paddingHorizontal: 6,
-  },
-  linkText: {
-    color: "#20826c", // same as practiceButton
-    fontWeight: "600",
   },
 
-  // matches Dashboard practiceButton
+  title: {
+    fontSize: 34,
+    fontWeight: "700",
+    color: BRAND,
+    marginTop: 6,
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 18,
+    color: BRAND,
+    opacity: 0.85,
+    marginTop: 6,
+    marginBottom: 28,
+    textAlign: "center",
+  },
+
+  form: {
+    width: "100%",
+    marginTop: 6,
+  },
+
+  input: {
+    height: 56,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: BORDER,
+    paddingHorizontal: 18,
+    fontSize: 16,
+    backgroundColor: "#FFFFFF",
+    marginBottom: 16,
+  },
+
+  forgotWrap: {
+    alignSelf: "flex-start",
+    marginTop: -6,
+    marginBottom: 18,
+  },
+  forgot: {
+    color: BRAND,
+    fontSize: 14,
+  },
+
   primaryButton: {
-    backgroundColor: "#20826c",
-    padding: 16,
+    backgroundColor: BRAND,
+    height: 56,
     borderRadius: 14,
     alignItems: "center",
-    marginTop: 18,
+    justifyContent: "center",
+    marginTop: 4,
   },
   primaryText: {
-    color: "white",
-    fontSize: 16,
+    color: "#FFFFFF",
+    fontSize: 18,
     fontWeight: "600",
   },
 
   switchRow: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 6,
-    marginTop: 14,
+    marginTop: 18,
+    flexWrap: "wrap",
   },
   switchText: {
-    color: "#666",
-    fontWeight: "600",
+    color: "#5F6F6B",
   },
   switchLink: {
-    color: "#20826c",
+    color: BRAND,
     fontWeight: "600",
   },
 });
