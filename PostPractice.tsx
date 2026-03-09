@@ -1,8 +1,8 @@
 import React, { useEffect } from "react";
 import { View, Text, Image, Pressable, StyleSheet } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { getFirestore, doc, updateDoc, increment } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { getDatabase, ref, update, increment } from 'firebase/database';
+import { app } from './firebaseConfig';
 
 const PostPractice = () => {
   const navigation = useNavigation<any>();
@@ -20,23 +20,53 @@ const PostPractice = () => {
   // Save minutes to database
   useEffect(() => {
     const savePractice = async () => {
-      try {
-        const auth = getAuth();
-        const user = auth.currentUser;
-        if (!user) return;
-
-        const db = getFirestore();
-        // const userStatsRef = ref(db, 'userStats/testUser1');
-        const userRef = doc(db, "users", user.uid);
-        await updateDoc(userRef, {
-          minutesPracticedToday: increment(minutesPracticed),
-        });
-      } catch (err) {
-        console.error("Failed to save practice minutes:", err);
-      }
-    };
+        try {
+            const db = getDatabase(app);
+            const userStatsRef = ref(db, 'userStats/testUser1');
+            await update(userStatsRef, {
+            minutesPracticedToday: increment(minutesPracticed),
+            });
+        } catch (err) {
+            console.error("Failed to save practice minutes:", err);
+        }
+        };
 
     savePractice();
+  }, []);
+
+    // Save coins to database
+  useEffect(() => {
+    const saveCoins = async () => {
+        try {
+            const db = getDatabase(app);
+            const userStatsRef = ref(db, 'userStats/testUser1');
+            await update(userStatsRef, {
+            currentEarnings: increment(Math.floor(minutesPracticed * 2)),
+            });
+        } catch (err) {
+            console.error("Failed to save coins:", err);
+        }
+        };
+
+    saveCoins();
+  }, []);
+
+
+      // Save stars to database
+  useEffect(() => {
+    const saveStars = async () => {
+        try {
+            const db = getDatabase(app);
+            const userStatsRef = ref(db, 'userStats/testUser1');
+            await update(userStatsRef, {
+            totalStars: increment(Math.max(1, Math.floor(minutesPracticed / 1))),
+            });
+        } catch (err) {
+            console.error("Failed to save stars:", err);
+        }
+        };
+
+    saveStars();
   }, []);
 
   const handleClaimRewards = () => {
@@ -61,10 +91,10 @@ const PostPractice = () => {
 
       <View style={styles.rewardsRow}>
         <View style={styles.rewardBox}>
-          <Text style={styles.rewardText}>$ {Math.floor(minutesPracticed * 0.8)}</Text>
+          <Text style={styles.rewardText}>$ {Math.floor(minutesPracticed * 2)}</Text>
         </View>
         <View style={styles.rewardBox}>
-          <Text style={styles.rewardText}>★ {Math.max(1, Math.floor(minutesPracticed / 10))}</Text>
+          <Text style={styles.rewardText}>★ {Math.max(1, Math.floor(minutesPracticed / 1))}</Text>
         </View>
       </View>
 

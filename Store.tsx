@@ -27,8 +27,11 @@ export default function Store() {
   const st_colors = ["SUNSET", "OCEAN", "BUBBLEGUM", "EARTH"]; // hat color variants
 
   const [selectedHat, setSelectedHat] = useState<string | null>(null);
-  const [basaeball, cowboy, beanie] = useState<string | null | null>(null);
   const handleSelectHat = (hatId: string) => {setSelectedHat(hatId);};
+  const [ownedHats, setOwnedHats] = useState<string[]>([]);
+  const purchaseHat = (hatId: string) => {
+    if (!ownedHats.includes(hatId)) {setOwnedHats(prev => [...prev, hatId]);}
+  };
   //Image MainAvatar = require("./assets/motimuse.png");
 
   return (
@@ -47,8 +50,20 @@ export default function Store() {
       </View>
 
       {/* Big Avatar */}
-      <View style={styles.ringContainer}>
-        <Image source={require("./assets/motimuse.png")} style={styles.big_img}/>
+      <View style={styles.avatarContainer}> {/*NEED TO GET AVATAR IMAGES*/}
+        {(!selectedHat && <Image source={require("./assets/motimuse.png")} style={styles.big_img}/>)}
+        {(selectedHat == "OB" && <Image source={require("./assets/OB_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "BB" && <Image source={require("./assets/BB_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "GB" && <Image source={require("./assets/GB_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "PB" && <Image source={require("./assets/PB_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "OG" && <Image source={require("./assets/OG_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "BG" && <Image source={require("./assets/BG_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "GG" && <Image source={require("./assets/GG_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "PG" && <Image source={require("./assets/PG_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "OC" && <Image source={require("./assets/OC_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "BC" && <Image source={require("./assets/BC_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "GC" && <Image source={require("./assets/GC_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "PC" && <Image source={require("./assets/PC_hat.png")} style={styles.big_img}/>)}
       </View>
 
       {/* Store Block */}
@@ -110,13 +125,27 @@ export default function Store() {
       </View>
 
       <View style={styles.buttonRow}> 
-        {selectedHat && (<View style={styles.purchased}>
+        {(selectedHat == "OB" ||selectedHat == "BB" || selectedHat == "GB" 
+          ||selectedHat == "PB") && (<View style={styles.purchased}>
           <Text>💰 15</Text>
         </View>)}
-        {selectedHat && (
-        <TouchableOpacity style={styles.purchase}>
-          <Text /*style={styles.purchase_text}*/>Purchase</Text>
+        {(selectedHat == "OG" ||selectedHat == "BG" || selectedHat == "GG" 
+          ||selectedHat == "PG") &&  (<View style={styles.purchased}>
+          <Text>💰 25</Text>
+        </View>)}
+        {(selectedHat == "OC" ||selectedHat == "BC" || selectedHat == "GC" 
+          ||selectedHat == "PC") &&  (<View style={styles.purchased}>
+          <Text>💰 35</Text>
+        </View>)}
+        {selectedHat && !ownedHats.includes(selectedHat) && (
+        <TouchableOpacity style={styles.purchase} onPress={() => purchaseHat(selectedHat)}>
+          <Text style={styles.purchase_text}>Purchase</Text>
         </TouchableOpacity>)}
+        {selectedHat && ownedHats.includes(selectedHat) && (
+        <TouchableOpacity style={styles.purchased}>
+          <Text>Select</Text>
+        </TouchableOpacity>
+        )}
       </View>
 
 
@@ -153,7 +182,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginLeft: 8,
   },
-  ringContainer: {
+  avatarContainer: {
     alignItems: "center",
     marginVertical: 30,
   },
@@ -236,6 +265,9 @@ const styles = StyleSheet.create({
     height: 40,
     //display: "none",
   },
+  purchase_text: {
+    color: "white",
+  },
   purchased: {
     backgroundColor: "#EAFBB1",
     paddingHorizontal: 12,
@@ -246,7 +278,7 @@ const styles = StyleSheet.create({
     height: 40,
     //display: "none",
   },
-   buttonRow: {
+  buttonRow: {
     flexDirection: "row",
     //justifyContent: "space-between",
     alignItems: "center",
