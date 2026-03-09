@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Image, View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from "react-native";
+import { Image, View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Pressable } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import BottomNav from "./BottomNav";
 
@@ -27,7 +27,9 @@ export default function Store() {
   const st_colors = ["SUNSET", "OCEAN", "BUBBLEGUM", "EARTH"]; // hat color variants
 
   const [selectedHat, setSelectedHat] = useState<string | null>(null);
+  const [basaeball, cowboy, beanie] = useState<string | null | null>(null);
   const handleSelectHat = (hatId: string) => {setSelectedHat(hatId);};
+  //Image MainAvatar = require("./assets/motimuse.png");
 
   return (
     <SafeAreaView style={styles.container}>
@@ -105,6 +107,16 @@ export default function Store() {
               style={[ styles.hat_img, selectedHat === "PC" && styles.selected_hat ]} />
           </TouchableOpacity>
         </View>
+      </View>
+
+      <View style={styles.buttonRow}> 
+        {selectedHat && (<View style={styles.purchased}>
+          <Text>💰 15</Text>
+        </View>)}
+        {selectedHat && (
+        <TouchableOpacity style={styles.purchase}>
+          <Text /*style={styles.purchase_text}*/>Purchase</Text>
+        </TouchableOpacity>)}
       </View>
 
 
@@ -212,6 +224,33 @@ const styles = StyleSheet.create({
     width: 250,
     height: 250,
     resizeMode: "contain",
+  },
+  purchase: {
+    backgroundColor: "#299564",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    marginLeft: 8,
+    color: "white",
+    width: 175,
+    height: 40,
+    //display: "none",
+  },
+  purchased: {
+    backgroundColor: "#EAFBB1",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    margin: 8,
+    width: 175,
+    height: 40,
+    //display: "none",
+  },
+   buttonRow: {
+    flexDirection: "row",
+    //justifyContent: "space-between",
+    alignItems: "center",
+    margin: 0,
   },
 });
 

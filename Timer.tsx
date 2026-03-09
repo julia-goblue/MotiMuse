@@ -6,18 +6,20 @@ import BottomNav from "./BottomNav";
 const Timer = () => {
   const navigation = useNavigation<any>();
   const [seconds, setSeconds] = useState(0);
+  const [paused, setPaused] = useState(false);
   const [text, setText] = useState('');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
+  const startTimer = () => {
     intervalRef.current = setInterval(() => {
       setSeconds((prev) => prev + 1);
     }, 1000);
+  };
 
+  useEffect(() => {
+    startTimer();
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
 
@@ -27,39 +29,40 @@ const Timer = () => {
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
-  const handleEndPractice = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
+  const handlePause = () => {
+    if (paused) {
+      startTimer();
+      setPaused(false);
+    } else {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      setPaused(true);
     }
-
-    navigation.goBack();
   };
 
-  const [activeTab, setActiveTab] = useState<
-    "home" | "music" | "box" | "profile"
-  >("home");
+  const handleEndPractice = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    navigation.navigate("PostPractice", { seconds });
+  };
+
+  const [activeTab, setActiveTab] = useState<"home" | "music" | "box" | "profile">("home");
 
   const handleTabPress = (tab: "home" | "music" | "box" | "profile") => {
     setActiveTab(tab);
-
-    if (tab === "home") {
-      navigation.navigate("Dashboard");
-    }
+    if (tab === "home") navigation.navigate("Dashboard");
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Practice Timer</Text>
 
-       <Image
+      <Image
         source={require('./assets/avatar.png')}
         style={{ width: 200, height: 200 }}
       />
 
-
       <TextInput
         style={styles.title}
-        placeholder="What piece are you practicing?"
+        placeholder="What piece?"
         value={text}
         onChangeText={setText}
       />
@@ -67,19 +70,16 @@ const Timer = () => {
       <Text style={styles.timerText}>{formatTime()}</Text>
 
       <View style={styles.layout}>
-      <Pressable style={styles.endButton} onPress={handleEndPractice}>
-        <Text style={styles.endText}>Pause</Text>
-      </Pressable>
+        <Pressable style={styles.endButton} onPress={handlePause}>
+          <Text style={styles.endText}>{paused ? "Resume" : "Pause"}</Text>
+        </Pressable>
 
-      <Pressable style={styles.endButton} onPress={handleEndPractice}>
-        <Text style={styles.endText}>End</Text>
-      </Pressable>
+        <Pressable style={styles.endButton} onPress={handleEndPractice}>
+          <Text style={styles.endText}>End</Text>
+        </Pressable>
       </View>
 
-       <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
-
-
-
+      <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
     </View>
   );
 };
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   endText: {
-    color: "666",
+    color: "#666",
     fontSize: 16,
     fontWeight: "600",
   },

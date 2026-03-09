@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   Pressable,
+  Image,
   View,
   Text,
   StyleSheet,
@@ -15,14 +16,16 @@ import BottomNav from "./BottomNav";
 export default function Dashboard() {
   const navigation = useNavigation<any>();
 
-  const practiceMinutes = 47;
-  const goalMinutes = 60;
-  const progress = Math.round((practiceMinutes / goalMinutes) * 100);
-
   const [earnings, setEarnings] = useState(0); 
   const [stars, setStars] = useState(0);
+  const [minutesPracticedToday, setMinutes] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const goalMinutes = 60;
+  const progress = Math.round((minutesPracticedToday / goalMinutes) * 100);
+
+
 
   useEffect(() => {
 
@@ -42,11 +45,13 @@ export default function Dashboard() {
         //    Ensure the keys ('currentEarnings', 'totalStars') match your database structure.
         setEarnings(data.currentEarnings || 0); // Use || 0 as a fallback if the key doesn't exist
         setStars(data.totalStars || 0);
+        setMinutes(data.minutesPracticedToday || 0);
         setLoading(false); // Data has been loaded
       } else {
         console.log("No data available at 'userStats/testUser1'");
         setEarnings(0);
         setStars(0);
+        setMinutes(0);
         setLoading(false); // Loading complete, but no data
       }
     }, (databaseError) => {
@@ -89,33 +94,61 @@ export default function Dashboard() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>This Week</Text>
+        <Image
+          source={require('./assets/avatar.png')}
+          style={{ width: 50, height: 50 }}
+        />
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
-            <Text>💰 {earnings}</Text>
+            <Text style={styles.statText}>$ {earnings}</Text>
           </View>
           <View style={styles.statBox}>
-            <Text>⭐ {stars}</Text>
+            <Text style={styles.statText}>★ {stars}</Text>
           </View>
         </View>
       </View>
 
+      {/* Today Title */}
+      <Text style={styles.title}>Today</Text>
+
       {/* Progress Ring */}
       <View style={styles.ringContainer}>
-        <ProgressRing progress={progress} minutes={practiceMinutes} />
+        <ProgressRing progress={progress} minutes={minutesPracticedToday} />
       </View>
 
-      {/* Weekly Bars */}
-      <View style={styles.barContainer}>
-        {weekData.map((m, i) => (
-          <View key={i} style={styles.barWrapper}>
-            <View style={[styles.bar, { height: m * 2 }]} />
-          </View>
-        ))}
+      {/* Weekly Bar Chart with Labels */}
+      <View style={styles.chartContainer}>
+        {/* Crown over best day */}
+        <View style={styles.crownRow}>
+          {weekData.map((m, i) => (
+            <View key={i} style={styles.crownCell}>
+              {m === Math.max(...weekData) && (
+                // put crown icon here later
+                <Text style={styles.crownIcon}></Text>
+              )}
+            </View>
+          ))}
+        </View>
+
+        {/* Day labels */}
+        <View style={[styles.labelRow, { marginBottom: 10 }]}>
+          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d, i) => (
+            <Text key={i} style={styles.dayLabel}>{d}</Text>
+          ))}
+        </View>
+
+        {/* Bars */}
+        <View style={styles.barContainer}>
+          {weekData.map((m, i) => (
+            <View key={i} style={styles.barWrapper}>
+              <View style={[styles.bar, { height: Math.max(m * 2, 8) }]} />
+            </View>
+          ))}
+        </View>
       </View>
 
       <Text style={styles.avgText}>
-        Average practice session this week: 54 minutes
+        Average practice session this week: <Text style={styles.avgBold}>54 minutes</Text>
       </Text>
 
       {/* Practice Button */}
@@ -123,7 +156,7 @@ export default function Dashboard() {
         onPress={() => navigation.navigate("Timer")}
         style={styles.practiceButton}
       >
-        <Text style={styles.practiceText}>Let’s Practice!</Text>
+        <Text style={styles.practiceText}>Let's Practice!</Text>
       </Pressable>
 
       {/* Bottom Nav */}
@@ -136,60 +169,109 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    padding: 20,
+    paddingHorizontal: 36,
   },
   header: {
     marginHorizontal: 10,
+    marginTop: 8,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
   title: {
-    fontSize: 24,
-    fontWeight: "600",
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1a6b5a",
+    textAlign: "center",
+    marginTop: 4,
   },
   statsRow: {
     flexDirection: "row",
+    alignItems: "center",
   },
   statBox: {
     backgroundColor: "#EAFBB1",
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 10,
     marginLeft: 8,
-    marginTop: 40,
+  },
+  statText: {
+    fontWeight: "600",
+    color: "#333",
   },
   ringContainer: {
     alignItems: "center",
-    marginVertical: 30,
+    marginVertical: 16,
+  },
+  chartContainer: {
+    marginTop: 4,
+  },
+  crownRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 2,
+  },
+  crownCell: {
+    width: 32,
+    alignItems: "center",
+  },
+  crownIcon: {
+    fontSize: 16,
+  },
+  labelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  dayLabel: {
+    width: 32,
+    textAlign: "center",
+    fontSize: 12,
+    color: "#555",
+    fontWeight: "500",
+  },
+  dateLabel: {
+    width: 32,
+    textAlign: "center",
+    fontSize: 12,
+    color: "#333",
+    fontWeight: "600",
+    marginBottom: 6,
   },
   barContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
-    height: 140,
-    marginTop: 10,
+    height: 120,
   },
   barWrapper: {
-    width: 55,
+    width: 32,
     alignItems: "center",
+    justifyContent: "flex-end",
+    height: 120,
   },
   bar: {
-    width: 30,
+    width: 32,
     backgroundColor: "#6EF2B2",
     borderRadius: 6,
   },
   avgText: {
     textAlign: "center",
-    marginTop: 10,
+    marginTop: 12,
     color: "#666",
+    fontSize: 13,
+  },
+  avgBold: {
+    fontWeight: "700",
+    color: "#333",
   },
   practiceButton: {
     backgroundColor: "#20826c",
     padding: 16,
     borderRadius: 14,
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 16,
+    marginHorizontal: 10,
   },
   practiceText: {
     color: "white",
