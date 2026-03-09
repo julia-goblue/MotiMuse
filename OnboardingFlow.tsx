@@ -24,6 +24,17 @@ export function ProfileInfoScreen() {
   const [last, setLast] = useState("");
   const [dob, setDob] = useState("");
 
+
+  const handleDobChange = (text: string) => {
+    const digits = text.replace(/\D/g, '');
+    let formatted = digits;
+    if (digits.length >= 3 && digits.length <= 4) {
+      formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    } else if (digits.length > 4) {
+      formatted = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+    }
+    setDob(formatted);
+  };
   const canContinue = first && last && dob;
 
   return (
@@ -51,14 +62,24 @@ export function ProfileInfoScreen() {
               onChangeText={setLast}
               style={styles.input}
             />
-
+{/* 
             <TextInput
-              placeholder="Date of Birth (DD/MM/YYYY)"
+              placeholder="Date of Birth (MM/DD/YYYY)"
               placeholderTextColor="#7AAEA3"
               value={dob}
               onChangeText={setDob}
               style={styles.input}
-            />
+            /> */}
+
+<TextInput
+  placeholder="Date of Birth (MM/DD/YYYY)"
+  placeholderTextColor="#7AAEA3"
+  value={dob}
+  onChangeText={handleDobChange}
+  style={styles.input}
+  keyboardType="numeric"
+  maxLength={10}
+/>
           </View>
         </ScrollView>
 
