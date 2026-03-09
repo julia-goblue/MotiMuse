@@ -92,6 +92,20 @@ export default function Dashboard() {
     daysWithPractice > 0 ? Math.round(totalWeekMinutes / daysWithPractice) : 0;
   const maxBar = Math.max(...weekData, 1);
 
+  const CHART_BAR_WIDTH = 40;
+  const CHART_GAP = 4;
+  const CHART_TOTAL_WIDTH = 7 * CHART_BAR_WIDTH + 6 * CHART_GAP;
+
+  // Current week dates (Sun–Sat) for label row: get Monday first, then +0..6
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const weekDates = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() + mondayOffset + i);
+    return d.getDate();
+  });
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -120,33 +134,45 @@ export default function Dashboard() {
 
       {/* Weekly Bar Chart with Labels */}
       <View style={styles.chartContainer}>
-        {/* Crown over best day */}
-        <View style={styles.crownRow}>
-          {weekData.map((m, i) => (
-            <View key={i} style={styles.crownCell}>
-              {m === Math.max(...weekData) && (
-                // put crown icon here later
-                <Text style={styles.crownIcon}></Text>
-              )}
-            </View>
+        <View style={[styles.chartRow, { width: CHART_TOTAL_WIDTH, marginBottom: 4 }]}>
+          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d, i) => (
+            <Text
+              key={i}
+              style={[styles.dayLabel, { width: CHART_BAR_WIDTH }]}
+              numberOfLines={1}
+            >
+              {d}
+            </Text>
           ))}
         </View>
 
-        {/* Day labels */}
-        <View style={[styles.labelRow, { marginBottom: 10 }]}>
-          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d, i) => (
-            <Text key={i} style={styles.dayLabel}>{d}</Text>
+        <View style={[styles.chartRow, { width: CHART_TOTAL_WIDTH, marginBottom: 8 }]}>
+          {weekDates.map((date, i) => (
+            <Text
+              key={i}
+              style={[styles.dateLabel, { width: CHART_BAR_WIDTH }]}
+              numberOfLines={1}
+            >
+              {date}
+            </Text>
           ))}
         </View>
 
-        {/* Bars */}
-        <View style={styles.barContainer}>
+        <View
+          style={[
+            styles.barContainer,
+            { width: CHART_TOTAL_WIDTH, gap: CHART_GAP },
+          ]}
+        >
           {weekData.map((m, i) => (
-            <View key={i} style={styles.barWrapper}>
+            <View key={i} style={[styles.barWrapper, { width: CHART_BAR_WIDTH }]}>
               <View
                 style={[
                   styles.bar,
-                  { height: maxBar > 0 ? Math.max((m / maxBar) * 120, 8) : 8 },
+                  {
+                    width: CHART_BAR_WIDTH,
+                    height: maxBar > 0 ? Math.max((m / maxBar) * 120, 8) : 8,
+                  },
                 ]}
               />
             </View>
@@ -211,52 +237,44 @@ const styles = StyleSheet.create({
   },
   chartContainer: {
     marginTop: 4,
+    alignItems: "center",
   },
-  crownRow: {
+  chartRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 2,
+    gap: 2,
+    justifyContent: "center",
   },
   crownCell: {
-    width: 32,
     alignItems: "center",
+    marginBottom: 2,
   },
   crownIcon: {
     fontSize: 16,
   },
-  labelRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
   dayLabel: {
-    width: 32,
     textAlign: "center",
-    fontSize: 12,
-    color: "#555",
-    fontWeight: "500",
+    fontSize: 13,
+    color: "#1a6b5a",
+    fontWeight: "600",
   },
   dateLabel: {
-    width: 32,
     textAlign: "center",
-    fontSize: 12,
+    fontSize: 14,
     color: "#333",
-    fontWeight: "600",
-    marginBottom: 6,
+    fontWeight: "700",
   },
   barContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "flex-end",
     height: 120,
   },
   barWrapper: {
-    width: 32,
     alignItems: "center",
     justifyContent: "flex-end",
     height: 120,
   },
   bar: {
-    width: 32,
     backgroundColor: "#6EF2B2",
     borderRadius: 6,
   },
