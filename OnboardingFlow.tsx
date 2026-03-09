@@ -152,7 +152,7 @@ export function PracticeMinutesScreen() {
         <Pressable
           style={[styles.bottomButton, !canContinue && styles.disabled]}
           disabled={!canContinue}
-          onPress={() => navigation.navigate("Dashboard")}
+          onPress={() => navigation.navigate("MainTabs")}
         >
           <Text style={styles.bottomButtonText}>Finish</Text>
         </Pressable>

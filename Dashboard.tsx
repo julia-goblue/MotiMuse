@@ -7,23 +7,26 @@ import {
   StyleSheet,
   SafeAreaView,
 } from "react-native";
-import { getDatabase, ref, onValue } from 'firebase/database';
-import { db, app } from './firebaseConfig';
+import { getDatabase, ref, onValue } from "firebase/database";
+import { db, app } from "./firebaseConfig";
 import { useNavigation } from "@react-navigation/native";
 import ProgressRing from "./ProgressRing";
-import BottomNav from "./BottomNav";
 
 export default function Dashboard() {
   const navigation = useNavigation<any>();
 
-  const [earnings, setEarnings] = useState(0); 
+  const [earnings, setEarnings] = useState(0);
   const [stars, setStars] = useState(0);
   const [minutesPracticedToday, setMinutes] = useState(0);
+  const [dailyGoalMinutes, setDailyGoalMinutes] = useState(20);
+  const [weekData, setWeekData] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<null | string>(null);
 
-  const goalMinutes = 60;
-  const progress = Math.round((minutesPracticedToday / goalMinutes) * 100);
+  const progress =
+    dailyGoalMinutes > 0
+      ? Math.min(100, Math.round((minutesPracticedToday / dailyGoalMinutes) * 100))
+      : 0;
 
 
 
@@ -43,16 +46,29 @@ export default function Dashboard() {
 
         // 4. Update your component's state with the fetched data.
         //    Ensure the keys ('currentEarnings', 'totalStars') match your database structure.
-        setEarnings(data.currentEarnings || 0); // Use || 0 as a fallback if the key doesn't exist
+        setEarnings(data.currentEarnings || 0);
         setStars(data.totalStars || 0);
         setMinutes(data.minutesPracticedToday || 0);
-        setLoading(false); // Data has been loaded
+        setDailyGoalMinutes(data.dailyGoalMinutes || 20);
+        const raw = data.weeklyMinutes;
+        if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+          setWeekData([
+            raw["0"] ?? 0, raw["1"] ?? 0, raw["2"] ?? 0, raw["3"] ?? 0,
+            raw["4"] ?? 0, raw["5"] ?? 0, raw["6"] ?? 0,
+          ]);
+        } else if (Array.isArray(raw) && raw.length >= 7) {
+          setWeekData(raw.slice(0, 7));
+        } else {
+          setWeekData([0, 0, 0, 0, 0, 0, 0]);
+        }
+        setLoading(false);
       } else {
-        console.log("No data available at 'userStats/testUser1'");
         setEarnings(0);
         setStars(0);
         setMinutes(0);
-        setLoading(false); // Loading complete, but no data
+        setDailyGoalMinutes(20);
+        setWeekData([0, 0, 0, 0, 0, 0, 0]);
+        setLoading(false);
       }
     }, (databaseError) => {
       // 5. Handle any errors during the data fetch
@@ -68,27 +84,13 @@ export default function Dashboard() {
       console.log("Detaching Firebase listener.");
       unsubscribe();
     };
-  }, []); // The empty dependency array `[]` means this effect runs ONLY ONCE after the initial render.
-  
-  
+  }, []);
 
-
-  const weekData = [20, 40, 25, 30, 60, 15, 35];
-
-  const [activeTab, setActiveTab] = useState<
-    "home" | "music" | "box" | "profile"
-  >("home");
-
-  const handleTabPress = (tab: "home" | "music" | "box" | "profile") => {
-    setActiveTab(tab);
-
-    if (tab === "music") {
-      navigation.navigate("Timer");
-    }
-    if (tab === "box") {
-      navigation.navigate("Store");
-    }
-  };
+  const totalWeekMinutes = weekData.reduce((a, b) => a + b, 0);
+  const daysWithPractice = weekData.filter((m) => m > 0).length;
+  const avgSessionMinutes =
+    daysWithPractice > 0 ? Math.round(totalWeekMinutes / daysWithPractice) : 0;
+  const maxBar = Math.max(...weekData, 1);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -141,26 +143,29 @@ export default function Dashboard() {
         <View style={styles.barContainer}>
           {weekData.map((m, i) => (
             <View key={i} style={styles.barWrapper}>
-              <View style={[styles.bar, { height: Math.max(m * 2, 8) }]} />
+              <View
+                style={[
+                  styles.bar,
+                  { height: maxBar > 0 ? Math.max((m / maxBar) * 120, 8) : 8 },
+                ]}
+              />
             </View>
           ))}
         </View>
       </View>
 
       <Text style={styles.avgText}>
-        Average practice session this week: <Text style={styles.avgBold}>54 minutes</Text>
+        Average practice session this week:{" "}
+        <Text style={styles.avgBold}>{avgSessionMinutes} minutes</Text>
       </Text>
 
-      {/* Practice Button */}
+      {/* Practice Button – switches to Timer tab */}
       <Pressable
         onPress={() => navigation.navigate("Timer")}
         style={styles.practiceButton}
       >
         <Text style={styles.practiceText}>Let's Practice!</Text>
       </Pressable>
-
-      {/* Bottom Nav */}
-      <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
     </SafeAreaView>
   );
 }
