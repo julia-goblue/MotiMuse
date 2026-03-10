@@ -1,28 +1,34 @@
 import React, { useState, useEffect } from "react";
 import {
   Pressable,
+  Image,
   View,
   Text,
   StyleSheet,
   SafeAreaView,
 } from "react-native";
-import { getDatabase, ref, onValue } from 'firebase/database';
-import { db, app } from './firebaseConfig';
+import { getDatabase, ref, onValue } from "firebase/database";
+import { db, app } from "./firebaseConfig";
 import { useNavigation } from "@react-navigation/native";
 import ProgressRing from "./ProgressRing";
-import BottomNav from "./BottomNav";
 
 export default function Dashboard() {
   const navigation = useNavigation<any>();
 
-  const practiceMinutes = 47;
-  const goalMinutes = 60;
-  const progress = Math.round((practiceMinutes / goalMinutes) * 100);
-
-  const [earnings, setEarnings] = useState(0); 
+  const [earnings, setEarnings] = useState(0);
   const [stars, setStars] = useState(0);
+  const [minutesPracticedToday, setMinutes] = useState(0);
+  const [dailyGoalMinutes, setDailyGoalMinutes] = useState(20);
+  const [weekData, setWeekData] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<null | string>(null);
+
+  const progress =
+    dailyGoalMinutes > 0
+      ? Math.min(100, Math.round((minutesPracticedToday / dailyGoalMinutes) * 100))
+      : 0;
+
+
 
   useEffect(() => {
 
@@ -40,14 +46,29 @@ export default function Dashboard() {
 
         // 4. Update your component's state with the fetched data.
         //    Ensure the keys ('currentEarnings', 'totalStars') match your database structure.
-        setEarnings(data.currentEarnings || 0); // Use || 0 as a fallback if the key doesn't exist
+        setEarnings(data.currentEarnings || 0);
         setStars(data.totalStars || 0);
-        setLoading(false); // Data has been loaded
+        setMinutes(data.minutesPracticedToday || 0);
+        setDailyGoalMinutes(data.dailyGoalMinutes || 20);
+        const raw = data.weeklyMinutes;
+        if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+          setWeekData([
+            raw["0"] ?? 0, raw["1"] ?? 0, raw["2"] ?? 0, raw["3"] ?? 0,
+            raw["4"] ?? 0, raw["5"] ?? 0, raw["6"] ?? 0,
+          ]);
+        } else if (Array.isArray(raw) && raw.length >= 7) {
+          setWeekData(raw.slice(0, 7));
+        } else {
+          setWeekData([0, 0, 0, 0, 0, 0, 0]);
+        }
+        setLoading(false);
       } else {
-        console.log("No data available at 'userStats/testUser1'");
         setEarnings(0);
         setStars(0);
-        setLoading(false); // Loading complete, but no data
+        setMinutes(0);
+        setDailyGoalMinutes(20);
+        setWeekData([0, 0, 0, 0, 0, 0, 0]);
+        setLoading(false);
       }
     }, (databaseError) => {
       // 5. Handle any errors during the data fetch
@@ -63,71 +84,114 @@ export default function Dashboard() {
       console.log("Detaching Firebase listener.");
       unsubscribe();
     };
-  }, []); // The empty dependency array `[]` means this effect runs ONLY ONCE after the initial render.
-  
-  
+  }, []);
 
+  const totalWeekMinutes = weekData.reduce((a, b) => a + b, 0);
+  const daysWithPractice = weekData.filter((m) => m > 0).length;
+  const avgSessionMinutes =
+    daysWithPractice > 0 ? Math.round(totalWeekMinutes / daysWithPractice) : 0;
+  const maxBar = Math.max(...weekData, 1);
 
-  const weekData = [20, 40, 25, 30, 60, 15, 35];
+  const CHART_BAR_WIDTH = 40;
+  const CHART_GAP = 4;
+  const CHART_TOTAL_WIDTH = 7 * CHART_BAR_WIDTH + 6 * CHART_GAP;
 
-  const [activeTab, setActiveTab] = useState<
-    "home" | "music" | "box" | "profile"
-  >("home");
-
-  const handleTabPress = (tab: "home" | "music" | "box" | "profile") => {
-    setActiveTab(tab);
-
-    if (tab === "music") {
-      navigation.navigate("Timer");
-    }
-    if (tab === "box") {
-      navigation.navigate("Store");
-    }
-  };
+  // Current week dates (Sun–Sat) for label row: get Monday first, then +0..6
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const weekDates = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() + mondayOffset + i);
+    return d.getDate();
+  });
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>This Week</Text>
+        <Image
+          source={require('./assets/avatar.png')}
+          style={{ width: 50, height: 50 }}
+        />
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
-            <Text>💰 {earnings}</Text>
+            <Text style={styles.statText}>$ {earnings}</Text>
           </View>
           <View style={styles.statBox}>
-            <Text>⭐ {stars}</Text>
+            <Text style={styles.statText}>★ {stars}</Text>
           </View>
         </View>
       </View>
 
+      {/* Today Title */}
+      <Text style={styles.title}>Today</Text>
+
       {/* Progress Ring */}
       <View style={styles.ringContainer}>
-        <ProgressRing progress={progress} minutes={practiceMinutes} />
+        <ProgressRing progress={progress} minutes={minutesPracticedToday} />
       </View>
 
-      {/* Weekly Bars */}
-      <View style={styles.barContainer}>
-        {weekData.map((m, i) => (
-          <View key={i} style={styles.barWrapper}>
-            <View style={[styles.bar, { height: m * 2 }]} />
-          </View>
-        ))}
+      {/* Weekly Bar Chart with Labels */}
+      <View style={styles.chartContainer}>
+        <View style={[styles.chartRow, { width: CHART_TOTAL_WIDTH, marginBottom: 4 }]}>
+          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d, i) => (
+            <Text
+              key={i}
+              style={[styles.dayLabel, { width: CHART_BAR_WIDTH }]}
+              numberOfLines={1}
+            >
+              {d}
+            </Text>
+          ))}
+        </View>
+
+        <View style={[styles.chartRow, { width: CHART_TOTAL_WIDTH, marginBottom: 8 }]}>
+          {weekDates.map((date, i) => (
+            <Text
+              key={i}
+              style={[styles.dateLabel, { width: CHART_BAR_WIDTH }]}
+              numberOfLines={1}
+            >
+              {date}
+            </Text>
+          ))}
+        </View>
+
+        <View
+          style={[
+            styles.barContainer,
+            { width: CHART_TOTAL_WIDTH, gap: CHART_GAP },
+          ]}
+        >
+          {weekData.map((m, i) => (
+            <View key={i} style={[styles.barWrapper, { width: CHART_BAR_WIDTH }]}>
+              <View
+                style={[
+                  styles.bar,
+                  {
+                    width: CHART_BAR_WIDTH,
+                    height: maxBar > 0 ? Math.max((m / maxBar) * 120, 8) : 8,
+                  },
+                ]}
+              />
+            </View>
+          ))}
+        </View>
       </View>
 
       <Text style={styles.avgText}>
-        Average practice session this week: 54 minutes
+        Average practice session this week:{" "}
+        <Text style={styles.avgBold}>{avgSessionMinutes} minutes</Text>
       </Text>
 
-      {/* Practice Button */}
+      {/* Practice Button – switches to Timer tab */}
       <Pressable
         onPress={() => navigation.navigate("Timer")}
         style={styles.practiceButton}
       >
-        <Text style={styles.practiceText}>Let’s Practice!</Text>
+        <Text style={styles.practiceText}>Let's Practice!</Text>
       </Pressable>
-
-      {/* Bottom Nav */}
-      <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
     </SafeAreaView>
   );
 }
@@ -136,60 +200,101 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    padding: 20,
+    paddingHorizontal: 36,
   },
   header: {
     marginHorizontal: 10,
+    marginTop: 8,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
   title: {
-    fontSize: 24,
-    fontWeight: "600",
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1a6b5a",
+    textAlign: "center",
+    marginTop: 4,
   },
   statsRow: {
     flexDirection: "row",
+    alignItems: "center",
   },
   statBox: {
     backgroundColor: "#EAFBB1",
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 10,
     marginLeft: 8,
-    marginTop: 40,
+  },
+  statText: {
+    fontWeight: "600",
+    color: "#333",
   },
   ringContainer: {
     alignItems: "center",
-    marginVertical: 30,
+    marginVertical: 16,
+  },
+  chartContainer: {
+    marginTop: 4,
+    alignItems: "center",
+  },
+  chartRow: {
+    flexDirection: "row",
+    gap: 2,
+    justifyContent: "center",
+  },
+  crownCell: {
+    alignItems: "center",
+    marginBottom: 2,
+  },
+  crownIcon: {
+    fontSize: 16,
+  },
+  dayLabel: {
+    textAlign: "center",
+    fontSize: 13,
+    color: "#1a6b5a",
+    fontWeight: "600",
+  },
+  dateLabel: {
+    textAlign: "center",
+    fontSize: 14,
+    color: "#333",
+    fontWeight: "700",
   },
   barContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "flex-end",
-    height: 140,
-    marginTop: 10,
+    height: 120,
   },
   barWrapper: {
-    width: 55,
     alignItems: "center",
+    justifyContent: "flex-end",
+    height: 120,
   },
   bar: {
-    width: 30,
     backgroundColor: "#6EF2B2",
     borderRadius: 6,
   },
   avgText: {
     textAlign: "center",
-    marginTop: 10,
+    marginTop: 12,
     color: "#666",
+    fontSize: 13,
+  },
+  avgBold: {
+    fontWeight: "700",
+    color: "#333",
   },
   practiceButton: {
     backgroundColor: "#20826c",
     padding: 16,
     borderRadius: 14,
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 16,
+    marginHorizontal: 10,
   },
   practiceText: {
     color: "white",

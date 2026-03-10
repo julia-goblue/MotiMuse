@@ -1,33 +1,78 @@
-import React, { useState } from "react";
-import { Image, View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import BottomNav from "./BottomNav";
+import React, { useState, useEffect } from "react";
+import {
+  Image,
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
+import { getDatabase, ref, onValue, runTransaction } from "firebase/database";
+import { app } from "./firebaseConfig";
+
+const HAT_PRICE = 15;
+const USER_STATS_PATH = "userStats/testUser1";
 
 export default function Store() {
-  const navigation = useNavigation<any>();
-
-  const [activeTab, setActiveTab] = useState<
-      "home" | "music" | "box" | "profile"
-    >("box");
-  
-    const handleTabPress = (tab: "home" | "music" | "box" | "profile") => {
-      setActiveTab(tab);
-      
-    if (tab === "music") {
-      navigation.navigate("Timer");
-    }
-    if (tab === "home") {
-      navigation.navigate("Dashboard");
-    }
-    if (tab === "box") {
-      navigation.navigate("Store");
-    }
-    };
-
-  const st_colors = ["SUNSET", "OCEAN", "BUBBLEGUM", "EARTH"]; // hat color variants
-
   const [selectedHat, setSelectedHat] = useState<string | null>(null);
-  const handleSelectHat = (hatId: string) => {setSelectedHat(hatId);};
+  const [earnings, setEarnings] = useState(0);
+  const [stars, setStars] = useState(0);
+  const [purchasing, setPurchasing] = useState(false);
+
+  useEffect(() => {
+    const rtdb = getDatabase(app);
+    const userStatsRef = ref(rtdb, USER_STATS_PATH);
+    const unsubscribe = onValue(userStatsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        setEarnings(data.currentEarnings ?? 0);
+        setStars(data.totalStars ?? 0);
+      } else {
+        setEarnings(0);
+        setStars(0);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleSelectHat = (hatId: string) => {
+    setSelectedHat(hatId);
+  };
+
+  const handlePurchase = async () => {
+    if (!selectedHat) return;
+    if (earnings < HAT_PRICE) {
+      Alert.alert("Not enough", `You need ${HAT_PRICE} to buy this item.`);
+      return;
+    }
+    setPurchasing(true);
+    try {
+      const rtdb = getDatabase(app);
+      const userStatsRef = ref(rtdb, USER_STATS_PATH);
+      await runTransaction(userStatsRef, (current) => {
+        if (!current) {
+          current = { currentEarnings: 0, totalStars: 0 };
+        }
+        const currentEarnings = current.currentEarnings ?? 0;
+        if (currentEarnings < HAT_PRICE) return current;
+        return {
+          ...current,
+          currentEarnings: currentEarnings - HAT_PRICE,
+          ownedHats: { ...(current.ownedHats || {}), [selectedHat]: true },
+        };
+      });
+      setSelectedHat(null);
+    } catch (e) {
+      console.error("Purchase failed:", e);
+      Alert.alert("Purchase failed", "Something went wrong. Try again.");
+    } finally {
+      setPurchasing(false);
+    }
+  };
+
+  const canAfford = earnings >= HAT_PRICE;
 
 
   return (
@@ -37,10 +82,10 @@ export default function Store() {
         <Text style={styles.title}>Store</Text>
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
-            <Text>💰 105</Text>
+            <Text>{"💰 " + earnings}</Text>
           </View>
           <View style={styles.statBox}>
-            <Text>⭐ 9</Text>
+            <Text>{"⭐ " + stars}</Text>
           </View>
         </View>
       </View>
@@ -52,7 +97,8 @@ export default function Store() {
 
       {/* Store Block */}
       <View style={styles.mainStore}>
-        <View style={styles.storeRow}> {/* Row of color variants */}
+        <View style={styles.storeRow}>
+          {/* Row of color variants */}
           <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("OB")}>
             <Image source={require("./assets/OB_hat.png")}
               style={[ styles.hat_img, selectedHat === "OB" && styles.selected_hat ]} />
@@ -70,7 +116,8 @@ export default function Store() {
               style={[ styles.hat_img, selectedHat === "PB" && styles.selected_hat ]} />
           </TouchableOpacity>
         </View>
-        <View style={styles.storeRow}> {/* Row of color variants */}
+        <View style={styles.storeRow}>
+          {/* Row of color variants */}
           <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("OG")}>
             <Image source={require("./assets/OG_hat.png")}
               style={[ styles.hat_img, selectedHat === "OG" && styles.selected_hat ]} />
@@ -88,7 +135,8 @@ export default function Store() {
               style={[ styles.hat_img, selectedHat === "PG" && styles.selected_hat ]} />
           </TouchableOpacity>
         </View>
-        <View style={styles.storeRow}> {/* Row of color variants */}
+        <View style={styles.storeRow}>
+          {/* Row of color variants */}
           <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("OC")}>
             <Image source={require("./assets/OC_hat.png")}
               style={[ styles.hat_img, selectedHat === "OC" && styles.selected_hat ]} />
@@ -108,10 +156,31 @@ export default function Store() {
         </View>
       </View>
 
-
-      {/* Shop Button or home bar */}
-      {/* Bottom Nav */}
-            <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
+      <View style={styles.buttonRow}>
+        {selectedHat && (
+          <View style={styles.purchased}>
+            <Text style={styles.priceText}>{"💰 " + HAT_PRICE}</Text>
+          </View>
+        )}
+        {selectedHat && (
+          <TouchableOpacity
+            style={[
+              styles.purchase,
+              (!canAfford || purchasing) && styles.purchaseDisabled,
+            ]}
+            onPress={handlePurchase}
+            disabled={!canAfford || purchasing}
+          >
+            {purchasing ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.purchaseText}>
+                {canAfford ? "Purchase" : "Not enough"}
+              </Text>
+            )}
+          </TouchableOpacity>
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -214,5 +283,46 @@ const styles = StyleSheet.create({
     height: 250,
     resizeMode: "contain",
   },
+  purchase: {
+    backgroundColor: "#299564",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    marginLeft: 8,
+    width: 175,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  purchaseDisabled: {
+    backgroundColor: "#999",
+    opacity: 0.8,
+  },
+  purchaseText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  purchased: {
+    backgroundColor: "#EAFBB1",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    margin: 8,
+    width: 175,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  priceText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+  },
+   buttonRow: {
+    flexDirection: "row",
+    //justifyContent: "space-between",
+    alignItems: "center",
+    margin: 0,
+  },
 });
-

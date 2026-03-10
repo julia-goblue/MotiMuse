@@ -44,7 +44,7 @@ export function LoginScreen() {
       }
 
       await signInWithEmailAndPassword(auth, email, password);
-      navigation.navigate("Dashboard");
+      navigation.navigate("MainTabs");
     } catch (error: any) {
       console.log("Login error:", error?.message ?? error);
     }
@@ -120,31 +120,64 @@ export function SignUpScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // async function handleSignUp() {
+  //   try {
+  //     if (!name || !email || !password) {
+  //       console.log("Missing fields");
+  //       return;
+  //     }
+
+  //     const userCredential = await createUserWithEmailAndPassword(
+  //       auth,
+  //       email,
+  //       password
+  //     );
+
+  //     const user = userCredential.user;
+
+  //     await addDoc(collection(db, "users"), {
+  //       uid: user.uid,
+  //       name,
+  //       email,
+  //       createdAt: new Date(),
+  //     });
+
+  //     navigation.replace("ProfileInfo");
+  //   } catch (error: any) {
+  //     console.log("Signup error:", error?.message ?? error);
+  //   }
+  // }
+
   async function handleSignUp() {
     try {
       if (!name || !email || !password) {
         console.log("Missing fields");
         return;
       }
-
+  
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
         password
       );
-
+  
       const user = userCredential.user;
-
-      await addDoc(collection(db, "users"), {
+  
+      // Fire-and-forget the Firestore write — don't let it block navigation
+      addDoc(collection(db, "users"), {
         uid: user.uid,
         name,
         email,
         createdAt: new Date(),
-      });
-
-      navigation.navigate("ProfileInfoScreen");
+      }).catch((err) => console.log("Firestore write failed:", err));
+  
+      // Navigate regardless of Firestore success
+      navigation.navigate("ProfileInfo");
+  
     } catch (error: any) {
+      // This now only catches auth errors
       console.log("Signup error:", error?.message ?? error);
+      alert("Sign up failed: " + (error?.message ?? "Unknown error"));
     }
   }
 
@@ -193,6 +226,14 @@ export function SignUpScreen() {
             <Pressable style={styles.primaryButton} onPress={handleSignUp}>
               <Text style={styles.primaryText}>Create Account</Text>
             </Pressable>
+
+{/* <Pressable
+  style={styles.primaryButton}
+  onPress={() => {
+    console.log("TEST NAV");
+    navigation.replace("ProfileInfo");
+  }}
+></Pressable>? */}
 
             <View style={styles.switchRow}>
               <Text style={styles.switchText}>Already have an account? </Text>
