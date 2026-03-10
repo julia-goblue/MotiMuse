@@ -81,17 +81,29 @@ export default function Store() {
         <Text style={styles.title}>Store</Text>
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
-            <Text>{"💰 " + earnings}</Text>
+            <Text>{"$ " + earnings}</Text>
           </View>
           <View style={styles.statBox}>
-            <Text>{"⭐ " + stars}</Text>
+            <Text>{"★ " + stars}</Text>
           </View>
         </View>
       </View>
 
       {/* Big Avatar */}
-      <View style={styles.ringContainer}>
-        <Image source={require("./assets/motimuse.png")} style={styles.big_img}/>
+      <View style={styles.ringContainer}> {/*NEED TO GET AVATAR IMAGES*/}
+        {(!selectedHat && <Image source={require("./assets/motimuse.png")} style={styles.big_img}/>)}
+        {(selectedHat == "OB" && <Image source={require("./assets/OB_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "BB" && <Image source={require("./assets/BB_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "GB" && <Image source={require("./assets/GB_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "PB" && <Image source={require("./assets/PB_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "OG" && <Image source={require("./assets/OG_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "BG" && <Image source={require("./assets/BG_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "GG" && <Image source={require("./assets/GG_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "PG" && <Image source={require("./assets/PG_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "OC" && <Image source={require("./assets/OC_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "BC" && <Image source={require("./assets/BC_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "GC" && <Image source={require("./assets/GC_hat.png")} style={styles.big_img}/>)}
+        {(selectedHat == "PC" && <Image source={require("./assets/PC_hat.png")} style={styles.big_img}/>)}
       </View>
 
       {/* Store Block */}
@@ -158,7 +170,7 @@ export default function Store() {
       <View style={styles.buttonRow}>
         {selectedHat && (
           <View style={styles.purchased}>
-            <Text style={styles.priceText}>{"💰 " + HAT_PRICE}</Text>
+            <Text style={styles.priceText}>{"$ " + HAT_PRICE}</Text>
           </View>
         )}
         {selectedHat && (

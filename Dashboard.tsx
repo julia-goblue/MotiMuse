@@ -28,6 +28,7 @@ export default function Dashboard() {
       ? Math.min(100, Math.round((minutesPracticedToday / dailyGoalMinutes) * 100))
       : 0;
 
+  // const progress = Math.round((minutesPracticedToday / dailyGoalMinutes) * 100);
 
 
   useEffect(() => {
