@@ -29,6 +29,7 @@ export default function Store() {
   const [selectedHat, setSelectedHat] = useState<string | null>(null);
   const handleSelectHat = (hatId: string) => {setSelectedHat(hatId);};
 
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
