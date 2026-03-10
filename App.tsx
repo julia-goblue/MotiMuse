@@ -16,6 +16,7 @@ import {
   PracticeMinutesScreen,
 } from "./OnboardingFlow";
 import PostPractice from "./PostPractice";
+import PracticeIntro from "./PracticeIntro";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -101,6 +102,7 @@ export default function App() {
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
         <Stack.Screen name="PracticeMinutes" component={PracticeMinutesScreen} />
         <Stack.Screen name="MainTabs" component={MainTabs} />
+        <Stack.Screen name="PracticeIntro" component={PracticeIntro} />
         <Stack.Screen name="PostPractice" component={PostPractice} />
       </Stack.Navigator>
     </NavigationContainer>
