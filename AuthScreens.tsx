@@ -44,7 +44,7 @@ export function LoginScreen() {
       }
 
       await signInWithEmailAndPassword(auth, email, password);
-      navigation.navigate("Dashboard");
+      navigation.navigate("MainTabs");
     } catch (error: any) {
       console.log("Login error:", error?.message ?? error);
     }

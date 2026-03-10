@@ -1,13 +1,19 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Image, TextInput, View, Text, StyleSheet, Pressable } from "react-native";
+import {
+  Image,
+  TextInput,
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import BottomNav from "./BottomNav";
 
 const Timer = () => {
   const navigation = useNavigation<any>();
   const [seconds, setSeconds] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [text, setText] = useState('');
+  const [text, setText] = useState("");
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const startTimer = () => {
@@ -44,13 +50,6 @@ const Timer = () => {
     navigation.navigate("PostPractice", { seconds });
   };
 
-  const [activeTab, setActiveTab] = useState<"home" | "music" | "box" | "profile">("home");
-
-  const handleTabPress = (tab: "home" | "music" | "box" | "profile") => {
-    setActiveTab(tab);
-    if (tab === "home") navigation.navigate("Dashboard");
-  };
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Practice Timer</Text>
@@ -78,8 +77,6 @@ const Timer = () => {
           <Text style={styles.endText}>End</Text>
         </Pressable>
       </View>
-
-      <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
     </View>
   );
 };

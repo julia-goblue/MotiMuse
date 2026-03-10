@@ -7,23 +7,26 @@ import {
   StyleSheet,
   SafeAreaView,
 } from "react-native";
-import { getDatabase, ref, onValue } from 'firebase/database';
-import { db, app } from './firebaseConfig';
+import { getDatabase, ref, onValue } from "firebase/database";
+import { db, app } from "./firebaseConfig";
 import { useNavigation } from "@react-navigation/native";
 import ProgressRing from "./ProgressRing";
-import BottomNav from "./BottomNav";
 
 export default function Dashboard() {
   const navigation = useNavigation<any>();
 
-  const [earnings, setEarnings] = useState(0); 
+  const [earnings, setEarnings] = useState(0);
   const [stars, setStars] = useState(0);
   const [minutesPracticedToday, setMinutes] = useState(0);
+  const [dailyGoalMinutes, setDailyGoalMinutes] = useState(20);
+  const [weekData, setWeekData] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<null | string>(null);
 
-  const goalMinutes = 60;
-  const progress = Math.round((minutesPracticedToday / goalMinutes) * 100);
+  const progress =
+    dailyGoalMinutes > 0
+      ? Math.min(100, Math.round((minutesPracticedToday / dailyGoalMinutes) * 100))
+      : 0;
 
 
 
@@ -43,16 +46,29 @@ export default function Dashboard() {
 
         // 4. Update your component's state with the fetched data.
         //    Ensure the keys ('currentEarnings', 'totalStars') match your database structure.
-        setEarnings(data.currentEarnings || 0); // Use || 0 as a fallback if the key doesn't exist
+        setEarnings(data.currentEarnings || 0);
         setStars(data.totalStars || 0);
         setMinutes(data.minutesPracticedToday || 0);
-        setLoading(false); // Data has been loaded
+        setDailyGoalMinutes(data.dailyGoalMinutes || 20);
+        const raw = data.weeklyMinutes;
+        if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+          setWeekData([
+            raw["0"] ?? 0, raw["1"] ?? 0, raw["2"] ?? 0, raw["3"] ?? 0,
+            raw["4"] ?? 0, raw["5"] ?? 0, raw["6"] ?? 0,
+          ]);
+        } else if (Array.isArray(raw) && raw.length >= 7) {
+          setWeekData(raw.slice(0, 7));
+        } else {
+          setWeekData([0, 0, 0, 0, 0, 0, 0]);
+        }
+        setLoading(false);
       } else {
-        console.log("No data available at 'userStats/testUser1'");
         setEarnings(0);
         setStars(0);
         setMinutes(0);
-        setLoading(false); // Loading complete, but no data
+        setDailyGoalMinutes(20);
+        setWeekData([0, 0, 0, 0, 0, 0, 0]);
+        setLoading(false);
       }
     }, (databaseError) => {
       // 5. Handle any errors during the data fetch
@@ -68,27 +84,27 @@ export default function Dashboard() {
       console.log("Detaching Firebase listener.");
       unsubscribe();
     };
-  }, []); // The empty dependency array `[]` means this effect runs ONLY ONCE after the initial render.
-  
-  
+  }, []);
 
+  const totalWeekMinutes = weekData.reduce((a, b) => a + b, 0);
+  const daysWithPractice = weekData.filter((m) => m > 0).length;
+  const avgSessionMinutes =
+    daysWithPractice > 0 ? Math.round(totalWeekMinutes / daysWithPractice) : 0;
+  const maxBar = Math.max(...weekData, 1);
 
-  const weekData = [20, 40, 25, 30, 60, 15, 35];
+  const CHART_BAR_WIDTH = 40;
+  const CHART_GAP = 4;
+  const CHART_TOTAL_WIDTH = 7 * CHART_BAR_WIDTH + 6 * CHART_GAP;
 
-  const [activeTab, setActiveTab] = useState<
-    "home" | "music" | "box" | "profile"
-  >("home");
-
-  const handleTabPress = (tab: "home" | "music" | "box" | "profile") => {
-    setActiveTab(tab);
-
-    if (tab === "music") {
-      navigation.navigate("Timer");
-    }
-    if (tab === "box") {
-      navigation.navigate("Store");
-    }
-  };
+  // Current week dates (Sun–Sat) for label row: get Monday first, then +0..6
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const weekDates = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() + mondayOffset + i);
+    return d.getDate();
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -118,49 +134,64 @@ export default function Dashboard() {
 
       {/* Weekly Bar Chart with Labels */}
       <View style={styles.chartContainer}>
-        {/* Crown over best day */}
-        <View style={styles.crownRow}>
-          {weekData.map((m, i) => (
-            <View key={i} style={styles.crownCell}>
-              {m === Math.max(...weekData) && (
-                // put crown icon here later
-                <Text style={styles.crownIcon}></Text>
-              )}
-            </View>
+        <View style={[styles.chartRow, { width: CHART_TOTAL_WIDTH, marginBottom: 4 }]}>
+          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d, i) => (
+            <Text
+              key={i}
+              style={[styles.dayLabel, { width: CHART_BAR_WIDTH }]}
+              numberOfLines={1}
+            >
+              {d}
+            </Text>
           ))}
         </View>
 
-        {/* Day labels */}
-        <View style={[styles.labelRow, { marginBottom: 10 }]}>
-          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d, i) => (
-            <Text key={i} style={styles.dayLabel}>{d}</Text>
+        <View style={[styles.chartRow, { width: CHART_TOTAL_WIDTH, marginBottom: 8 }]}>
+          {weekDates.map((date, i) => (
+            <Text
+              key={i}
+              style={[styles.dateLabel, { width: CHART_BAR_WIDTH }]}
+              numberOfLines={1}
+            >
+              {date}
+            </Text>
           ))}
         </View>
 
-        {/* Bars */}
-        <View style={styles.barContainer}>
+        <View
+          style={[
+            styles.barContainer,
+            { width: CHART_TOTAL_WIDTH, gap: CHART_GAP },
+          ]}
+        >
           {weekData.map((m, i) => (
-            <View key={i} style={styles.barWrapper}>
-              <View style={[styles.bar, { height: Math.max(m * 2, 8) }]} />
+            <View key={i} style={[styles.barWrapper, { width: CHART_BAR_WIDTH }]}>
+              <View
+                style={[
+                  styles.bar,
+                  {
+                    width: CHART_BAR_WIDTH,
+                    height: maxBar > 0 ? Math.max((m / maxBar) * 120, 8) : 8,
+                  },
+                ]}
+              />
             </View>
           ))}
         </View>
       </View>
 
       <Text style={styles.avgText}>
-        Average practice session this week: <Text style={styles.avgBold}>54 minutes</Text>
+        Average practice session this week:{" "}
+        <Text style={styles.avgBold}>{avgSessionMinutes} minutes</Text>
       </Text>
 
-      {/* Practice Button */}
+      {/* Practice Button – switches to Timer tab */}
       <Pressable
         onPress={() => navigation.navigate("Timer")}
         style={styles.practiceButton}
       >
         <Text style={styles.practiceText}>Let's Practice!</Text>
       </Pressable>
-
-      {/* Bottom Nav */}
-      <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
     </SafeAreaView>
   );
 }
@@ -206,52 +237,44 @@ const styles = StyleSheet.create({
   },
   chartContainer: {
     marginTop: 4,
+    alignItems: "center",
   },
-  crownRow: {
+  chartRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 2,
+    gap: 2,
+    justifyContent: "center",
   },
   crownCell: {
-    width: 32,
     alignItems: "center",
+    marginBottom: 2,
   },
   crownIcon: {
     fontSize: 16,
   },
-  labelRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
   dayLabel: {
-    width: 32,
     textAlign: "center",
-    fontSize: 12,
-    color: "#555",
-    fontWeight: "500",
+    fontSize: 13,
+    color: "#1a6b5a",
+    fontWeight: "600",
   },
   dateLabel: {
-    width: 32,
     textAlign: "center",
-    fontSize: 12,
+    fontSize: 14,
     color: "#333",
-    fontWeight: "600",
-    marginBottom: 6,
+    fontWeight: "700",
   },
   barContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "flex-end",
     height: 120,
   },
   barWrapper: {
-    width: 32,
     alignItems: "center",
     justifyContent: "flex-end",
     height: 120,
   },
   bar: {
-    width: 32,
     backgroundColor: "#6EF2B2",
     borderRadius: 6,
   },

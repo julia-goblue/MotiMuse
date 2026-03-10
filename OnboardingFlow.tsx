@@ -11,6 +11,8 @@ import {
   ScrollView,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { getDatabase, ref, update } from "firebase/database";
+import { app } from "./firebaseConfig";
 
 type Nav = any;
 
@@ -152,7 +154,18 @@ export function PracticeMinutesScreen() {
         <Pressable
           style={[styles.bottomButton, !canContinue && styles.disabled]}
           disabled={!canContinue}
-          onPress={() => navigation.navigate("Dashboard")}
+          onPress={async () => {
+            const value = Math.min(999, Math.max(1, Number(minutes) || 20));
+            try {
+              const rtdb = getDatabase(app);
+              await update(ref(rtdb, "userStats/testUser1"), {
+                dailyGoalMinutes: value,
+              });
+            } catch (e) {
+              console.error("Failed to save goal:", e);
+            }
+            navigation.navigate("MainTabs");
+          }}
         >
           <Text style={styles.bottomButtonText}>Finish</Text>
         </Pressable>
