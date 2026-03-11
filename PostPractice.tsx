@@ -1,9 +1,10 @@
 import React, { useEffect } from "react";
 import { View, Text, Image, Pressable, StyleSheet } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { getFirestore, doc, updateDoc, increment } from "firebase/firestore";
+// import { getFirestore, doc, updateDoc, increment } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import { getDatabase, ref, runTransaction } from "firebase/database";
+// import { getDatabase, ref, runTransaction } from "firebase/database";
+import { getDatabase, ref, update, increment } from 'firebase/database';
 import { app } from "./firebaseConfig";
 
 const PostPractice = () => {
@@ -12,6 +13,7 @@ const PostPractice = () => {
   const { seconds = 0 } = route.params ?? {};
 
   const minutesPracticed = Math.floor(seconds / 60);
+  
 
   const formatTime = () => {
     const mins = Math.floor(seconds / 60);
@@ -19,48 +21,65 @@ const PostPractice = () => {
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
-  // Save minutes + rewards to Firestore and Realtime DB (dashboard/shop + weekly chart)
+    // Save minutes to database
   useEffect(() => {
     const savePractice = async () => {
-      const earnedDollars = Math.floor(minutesPracticed * 0.8);
-      const earnedStars = Math.max(1, Math.floor(minutesPracticed / 10));
-
-      try {
-        const auth = getAuth();
-        const user = auth.currentUser;
-        if (user) {
-          const db = getFirestore();
-          const userRef = doc(db, "users", user.uid);
-          await updateDoc(userRef, {
+        try {
+            const db = getDatabase(app);
+            const userStatsRef = ref(db, 'userStats/testUser1');
+            await update(userStatsRef, {
             minutesPracticedToday: increment(minutesPracticed),
-          });
+            });
+        } catch (err) {
+            console.error("Failed to save practice minutes:", err);
         }
-
-        const rtdb = getDatabase(app);
-        const userStatsRef = ref(rtdb, "userStats/testUser1");
-        const dayIndex = (new Date().getDay() + 6) % 7; // Mon=0 .. Sun=6
-        const key = String(dayIndex);
-
-        await runTransaction(userStatsRef, (current) => {
-          const next = current != null ? { ...current } : {};
-          next.minutesPracticedToday = (next.minutesPracticedToday ?? 0) + minutesPracticed;
-          next.currentEarnings = (next.currentEarnings ?? 0) + earnedDollars;
-          next.totalStars = (next.totalStars ?? 0) + earnedStars;
-
-          const prevWeek = next.weeklyMinutes && typeof next.weeklyMinutes === "object"
-            ? { ...next.weeklyMinutes }
-            : { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0 };
-          next.weeklyMinutes = { ...prevWeek, [key]: (prevWeek[key] ?? 0) + minutesPracticed };
-
-          return next;
-        });
-      } catch (err) {
-        console.error("Failed to save practice:", err);
-      }
-    };
+        };
 
     savePractice();
-  }, [minutesPracticed]);
+  }, []);
+
+  // // Save minutes + rewards to Firestore and Realtime DB (dashboard/shop + weekly chart)
+  // useEffect(() => {
+  //   const savePractice = async () => {
+  //     const earnedDollars = Math.floor(minutesPracticed * 0.8);
+  //     const earnedStars = Math.max(1, Math.floor(minutesPracticed / 10));
+
+  //     try {
+  //       const auth = getAuth();
+  //       const user = auth.currentUser;
+  //       if (user) {
+  //         const db = getFirestore();
+  //         const userRef = doc(db, "users", user.uid);
+  //         await updateDoc(userRef, {
+  //           minutesPracticedToday: increment(minutesPracticed),
+  //         });
+  //       }
+
+  //       const rtdb = getDatabase(app);
+  //       const userStatsRef = ref(rtdb, "userStats/testUser1");
+  //       const dayIndex = (new Date().getDay() + 6) % 7; // Mon=0 .. Sun=6
+  //       const key = String(dayIndex);
+
+  //       await runTransaction(userStatsRef, (current) => {
+  //         const next = current != null ? { ...current } : {};
+  //         next.minutesPracticedToday = (next.minutesPracticedToday ?? 0) + minutesPracticed;
+  //         next.currentEarnings = (next.currentEarnings ?? 0) + earnedDollars;
+  //         next.totalStars = (next.totalStars ?? 0) + earnedStars;
+
+  //         const prevWeek = next.weeklyMinutes && typeof next.weeklyMinutes === "object"
+  //           ? { ...next.weeklyMinutes }
+  //           : { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0 };
+  //         next.weeklyMinutes = { ...prevWeek, [key]: (prevWeek[key] ?? 0) + minutesPracticed };
+
+  //         return next;
+  //       });
+  //     } catch (err) {
+  //       console.error("Failed to save practice:", err);
+  //     }
+  //   };
+
+  //   savePractice();
+  // }, [minutesPracticed]);
 
   const handleClaimRewards = () => {
     navigation.navigate("MainTabs");

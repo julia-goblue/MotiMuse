@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { getAuth } from "firebase/auth";
-import { getDoc, doc, updateDoc } from "firebase/firestore";
+import { getDoc, getDocFromCache, doc, updateDoc } from "firebase/firestore";
 import { getDatabase, ref, onValue, update } from "firebase/database";
 import { app, db } from "./firebaseConfig";
 
@@ -40,23 +40,36 @@ export default function Profile() {
     return () => unsubscribe();
   }, []);
 
-  // Load name from Firestore (sign-up name at users/{uid})
+  // Load name from Firestore (sign-up name at users/{uid}); use cache when offline
   useEffect(() => {
     let cancelled = false;
     const loadName = async () => {
       const user = getAuth(app).currentUser;
-      if (user) {
-        try {
-          const snap = await getDoc(doc(db, "users", user.uid));
-          if (!cancelled && snap.exists()) {
-            const data = snap.data();
-            setName(data?.name ?? "");
-          }
-        } catch (e) {
-          console.error("Failed to load name:", e);
-        }
+      if (!user) {
+        setLoading(false);
+        return;
       }
-      if (!cancelled) setLoading(false);
+      try {
+        const userRef = doc(db, "users", user.uid);
+        let snap = null;
+        try {
+          snap = await getDoc(userRef);
+        } catch {
+          try {
+            snap = await getDocFromCache(userRef);
+          } catch {
+            // Offline and no cache; name stays empty
+          }
+        }
+        if (!cancelled && snap?.exists()) {
+          const data = snap.data();
+          setName(data?.name ?? "");
+        }
+      } catch (e) {
+        console.error("Failed to load name:", e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     };
     loadName();
     return () => {

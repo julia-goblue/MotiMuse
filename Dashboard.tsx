@@ -28,6 +28,7 @@ export default function Dashboard() {
       ? Math.min(100, Math.round((minutesPracticedToday / dailyGoalMinutes) * 100))
       : 0;
 
+  // const progress = Math.round((minutesPracticedToday / dailyGoalMinutes) * 100);
 
 
   useEffect(() => {
@@ -185,9 +186,9 @@ export default function Dashboard() {
         <Text style={styles.avgBold}>{avgSessionMinutes} minutes</Text>
       </Text>
 
-      {/* Practice Button – switches to Timer tab */}
+      {/* Practice Button – opens intro then Timer */}
       <Pressable
-        onPress={() => navigation.navigate("Timer")}
+        onPress={() => navigation.navigate("PracticeIntro")}
         style={styles.practiceButton}
       >
         <Text style={styles.practiceText}>Let's Practice!</Text>
