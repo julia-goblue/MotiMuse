@@ -15,11 +15,36 @@ import { app } from "./firebaseConfig";
 const HAT_PRICE = 15;
 const USER_STATS_PATH = "userStats/testUser1";
 
+export function getChosenAvatar(selectedHat: string | null) {
+  const avatars: Record<string, any> = {
+    OB: require("./assets/OB_guy.png"),
+    BB: require("./assets/BB_guy.png"),
+    GB: require("./assets/GB_guy.png"),
+    PB: require("./assets/PB_guy.png"),
+    OG: require("./assets/OG_guy.png"),
+    BG: require("./assets/BG_guy.png"),
+    GG: require("./assets/GG_guy.png"),
+    PG: require("./assets/PG_guy.png"),
+    OC: require("./assets/OC_guy.png"),
+    BC: require("./assets/BC_guy.png"),
+    GC: require("./assets/GC_guy.png"),
+    PC: require("./assets/PC_guy.png"),
+  };
+
+  if (!selectedHat) {
+    return require("./assets/Avatar 1.png");
+  }
+
+  return avatars[selectedHat];
+}
+
 export default function Store() {
   const [selectedHat, setSelectedHat] = useState<string | null>(null);
   const [earnings, setEarnings] = useState(0);
   const [stars, setStars] = useState(0);
   const [purchasing, setPurchasing] = useState(false);
+  const [equippedHat, setEquippedHat] = useState<string | null>(null);
+
 
   useEffect(() => {
     const rtdb = getDatabase(app);
@@ -29,6 +54,7 @@ export default function Store() {
         const data = snapshot.val();
         setEarnings(data.currentEarnings ?? 0);
         setStars(data.totalStars ?? 0);
+        setEquippedHat(data.equippedHat ?? null);
       } else {
         setEarnings(0);
         setStars(0);
@@ -36,6 +62,10 @@ export default function Store() {
     });
     return () => unsubscribe();
   }, []);
+
+
+  
+  //export default chosenAvatar  = !selectedHat ? "./assets/Avatar 1.png" : "./assets/${selectedHat}_guy.png";
 
   const handleSelectHat = (hatId: string) => {
     setSelectedHat(hatId);
@@ -61,6 +91,7 @@ export default function Store() {
           ...current,
           currentEarnings: currentEarnings - HAT_PRICE,
           ownedHats: { ...(current.ownedHats || {}), [selectedHat]: true },
+          equippedHat: selectedHat,
         };
       });
       setSelectedHat(null);
@@ -73,7 +104,7 @@ export default function Store() {
   };
 
   const canAfford = earnings >= HAT_PRICE;
-
+  const chosenAvatar = !selectedHat ? "./assets/Avatar 1.png" : "./assets/${selectedHat}_guy.png";
 
   return (
     <SafeAreaView style={styles.container}>
@@ -92,19 +123,19 @@ export default function Store() {
 
       {/* Big Avatar */}
       <View style={styles.ringContainer}> {/*NEED TO GET AVATAR IMAGES*/}
-        {(!selectedHat && <Image source={require("./assets/motimuse.png")} style={styles.big_img}/>)}
-        {(selectedHat == "OB" && <Image source={require("./assets/OB_hat.png")} style={styles.big_img}/>)}
-        {(selectedHat == "BB" && <Image source={require("./assets/BB_hat.png")} style={styles.big_img}/>)}
-        {(selectedHat == "GB" && <Image source={require("./assets/GB_hat.png")} style={styles.big_img}/>)}
-        {(selectedHat == "PB" && <Image source={require("./assets/PB_hat.png")} style={styles.big_img}/>)}
-        {(selectedHat == "OG" && <Image source={require("./assets/OG_hat.png")} style={styles.big_img}/>)}
-        {(selectedHat == "BG" && <Image source={require("./assets/BG_hat.png")} style={styles.big_img}/>)}
-        {(selectedHat == "GG" && <Image source={require("./assets/GG_hat.png")} style={styles.big_img}/>)}
-        {(selectedHat == "PG" && <Image source={require("./assets/PG_hat.png")} style={styles.big_img}/>)}
-        {(selectedHat == "OC" && <Image source={require("./assets/OC_hat.png")} style={styles.big_img}/>)}
-        {(selectedHat == "BC" && <Image source={require("./assets/BC_hat.png")} style={styles.big_img}/>)}
-        {(selectedHat == "GC" && <Image source={require("./assets/GC_hat.png")} style={styles.big_img}/>)}
-        {(selectedHat == "PC" && <Image source={require("./assets/PC_hat.png")} style={styles.big_img}/>)}
+        {(!selectedHat && <Image source={require("./assets/Avatar 1.png")} style={styles.big_img}/>)}
+        {(selectedHat == "OB" && <Image source={require("./assets/OB_guy.png")} style={styles.big_img}/>)}
+        {(selectedHat == "BB" && <Image source={require("./assets/BB_guy.png")} style={styles.big_img}/>)}
+        {(selectedHat == "GB" && <Image source={require("./assets/GB_guy.png")} style={styles.big_img}/>)}
+        {(selectedHat == "PB" && <Image source={require("./assets/PB_guy.png")} style={styles.big_img}/>)}
+        {(selectedHat == "OG" && <Image source={require("./assets/OG_guy.png")} style={styles.big_img}/>)}
+        {(selectedHat == "BG" && <Image source={require("./assets/BG_guy.png")} style={styles.big_img}/>)}
+        {(selectedHat == "GG" && <Image source={require("./assets/GG_guy.png")} style={styles.big_img}/>)}
+        {(selectedHat == "PG" && <Image source={require("./assets/PG_guy.png")} style={styles.big_img}/>)}
+        {(selectedHat == "OC" && <Image source={require("./assets/OC_guy.png")} style={styles.big_img}/>)}
+        {(selectedHat == "BC" && <Image source={require("./assets/BC_guy.png")} style={styles.big_img}/>)}
+        {(selectedHat == "GC" && <Image source={require("./assets/GC_guy.png")} style={styles.big_img}/>)}
+        {(selectedHat == "PC" && <Image source={require("./assets/PC_guy.png")} style={styles.big_img}/>)}
       </View>
 
       {/* Store Block */}

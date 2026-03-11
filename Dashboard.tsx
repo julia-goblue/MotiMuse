@@ -11,6 +11,7 @@ import { getDatabase, ref, onValue } from "firebase/database";
 import { db, app } from "./firebaseConfig";
 import { useNavigation } from "@react-navigation/native";
 import ProgressRing from "./ProgressRing";
+import {getChosenAvatar} from "./Store"
 
 export default function Dashboard() {
   const navigation = useNavigation<any>();
@@ -22,6 +23,7 @@ export default function Dashboard() {
   const [weekData, setWeekData] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<null | string>(null);
+  const [equippedHat, setEquippedHat] = useState<string | null>(null);
 
   const progress =
     dailyGoalMinutes > 0
@@ -51,6 +53,7 @@ export default function Dashboard() {
         setStars(data.totalStars || 0);
         setMinutes(data.minutesPracticedToday || 0);
         setDailyGoalMinutes(data.dailyGoalMinutes || 20);
+        setEquippedHat(data.equippedHat ?? null);
         const raw = data.weeklyMinutes;
         if (raw && typeof raw === "object" && !Array.isArray(raw)) {
           setWeekData([
@@ -107,12 +110,15 @@ export default function Dashboard() {
     return d.getDate();
   });
 
+  const avatar = getChosenAvatar(equippedHat);
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Image
-          source={require('./assets/avatar.png')}
+          {/*source={require('./assets/avatar.png')}*/}
+          source={avatar}
           style={{ width: 50, height: 50 }}
         />
         <View style={styles.statsRow}>
