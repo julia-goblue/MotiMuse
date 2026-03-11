@@ -4,14 +4,21 @@ import Svg, { Circle } from "react-native-svg";
 
 interface Props {
   progress: number; // 0–100
-  minutes: number;
+  // minutes: number;
+  seconds: number;  // was: minutes: number
 }
 
-export default function ProgressRing({ progress, minutes }: Props) {
+// export default function ProgressRing({ progress, minutes }: Props) {
+export default function ProgressRing({ progress, seconds }: Props) {
   const radius = 80;
   const strokeWidth = 14;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (progress / 100) * circumference;
+
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  const timeLabel = mins > 0 ? `${mins}:${secs < 10 ? "0" : ""}${secs}` : `${secs}s`;
+  const unitLabel = mins > 0 ? "minutes" : "seconds";
 
   return (
     <View style={styles.container}>
@@ -44,8 +51,11 @@ export default function ProgressRing({ progress, minutes }: Props) {
 
       {/* Center Text */}
       <View style={styles.centerText}>
-        <Text style={styles.minutes}>{minutes}</Text>
-        <Text style={styles.label}>minutes</Text>
+        {/* <Text style={styles.minutes}>{minutes}</Text>
+        <Text style={styles.label}>minutes</Text> */}
+
+        <Text style={styles.minutes}>{timeLabel}</Text>
+        <Text style={styles.label}>{unitLabel}</Text>
       </View>
     </View>
   );

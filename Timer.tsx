@@ -8,6 +8,10 @@ import {
   Pressable,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { getDatabase, ref, onValue } from "firebase/database";
+import { db, app } from "./firebaseConfig";
+import {getChosenAvatar} from "./Store"
+
 
 const Timer = () => {
   const navigation = useNavigation<any>();
@@ -15,6 +19,41 @@ const Timer = () => {
   const [paused, setPaused] = useState(false);
   const [text, setText] = useState("");
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [equippedHat, setEquippedHat] = useState<string | null>(null);
+
+   useEffect(() => {
+  
+      //    (e.g., if you're using Firebase Auth, you'd use `auth.currentUser.uid`)
+      const db = getDatabase(app);
+      const userStatsRef = ref(db, 'userStats/testUser1');
+  
+      // 3. Attach a listener using onValue.
+      //    This function will be called immediately with the initial data,
+      //    and again every time the data at 'userStats/testUser1' changes.
+      const unsubscribe = onValue(userStatsRef, (snapshot) => {
+        if (snapshot.exists()) { // Check if data exists at the path
+          const data = snapshot.val();
+          console.log("Fetched data:", data); // Log the data to see what you received
+  
+          setEquippedHat(data.equippedHat ?? null);
+  
+        } 
+      }, (databaseError) => {
+        // 5. Handle any errors during the data fetch
+        console.error("Error fetching user stats:", databaseError);
+      });
+  
+      // 6. Return a cleanup function.
+      //    This is crucial for real-time listeners to prevent memory leaks.
+      //    When the component unmounts (is removed from the screen),
+      //    this function will be called to detach the listener.
+      return () => {
+        console.log("Detaching Firebase listener.");
+        unsubscribe();
+      };
+    }, []);
+  
+  const avatar = getChosenAvatar(equippedHat);
 
   const startTimer = () => {
     intervalRef.current = setInterval(() => {
@@ -55,16 +94,16 @@ const Timer = () => {
       <Text style={styles.title}>Practice Timer</Text>
 
       <Image
-        source={require('./assets/avatar.png')}
+        source={avatar}
         style={{ width: 200, height: 200 }}
       />
 
-      <TextInput
+      {/* <TextInput
         style={styles.title}
         placeholder="What piece?"
         value={text}
         onChangeText={setText}
-      />
+      /> */}
 
       <Text style={styles.timerText}>{formatTime()}</Text>
 

@@ -1,11 +1,12 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, Image, Pressable, StyleSheet } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 // import { getFirestore, doc, updateDoc, increment } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 // import { getDatabase, ref, runTransaction } from "firebase/database";
-import { getDatabase, ref, update, increment } from 'firebase/database';
+import { getDatabase, ref, update, increment, onValue } from 'firebase/database';
 import { app } from "./firebaseConfig";
+import {getChosenAvatar} from "./Store"
 
 const PostPractice = () => {
   const navigation = useNavigation<any>();
@@ -13,13 +14,60 @@ const PostPractice = () => {
   const { seconds = 0 } = route.params ?? {};
 
   const minutesPracticed = Math.floor(seconds / 60);
+
+  const [equippedHat, setEquippedHat] = useState<string | null>(null);
+  
+     useEffect(() => {
+    
+        //    (e.g., if you're using Firebase Auth, you'd use `auth.currentUser.uid`)
+        const db = getDatabase(app);
+        const userStatsRef = ref(db, 'userStats/testUser1');
+    
+        // 3. Attach a listener using onValue.
+        //    This function will be called immediately with the initial data,
+        //    and again every time the data at 'userStats/testUser1' changes.
+        const unsubscribe = onValue(userStatsRef, (snapshot) => {
+          if (snapshot.exists()) { // Check if data exists at the path
+            const data = snapshot.val();
+            console.log("Fetched data:", data); // Log the data to see what you received
+    
+            setEquippedHat(data.equippedHat ?? null);
+    
+          } 
+        }, (databaseError) => {
+          // 5. Handle any errors during the data fetch
+          console.error("Error fetching user stats:", databaseError);
+        });
+    
+        // 6. Return a cleanup function.
+        //    This is crucial for real-time listeners to prevent memory leaks.
+        //    When the component unmounts (is removed from the screen),
+        //    this function will be called to detach the listener.
+        return () => {
+          console.log("Detaching Firebase listener.");
+          unsubscribe();
+        };
+      }, []);
+    
+  const avatar = getChosenAvatar(equippedHat);
+  
   
 
+  // const formatTime = () => {
+  //   const mins = Math.floor(seconds / 60);
+  //   const secs = seconds % 60;
+  //   return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  // };
+
   const formatTime = () => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
-  };
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+
+  if (mins === 0) {
+    return `${secs}s`;
+  }
+  return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+};
 
     // Save minutes to database
   useEffect(() => {
@@ -29,6 +77,7 @@ const PostPractice = () => {
             const userStatsRef = ref(db, 'userStats/testUser1');
             await update(userStatsRef, {
             minutesPracticedToday: increment(minutesPracticed),
+            secondsPracticedToday: increment(seconds),
             });
         } catch (err) {
             console.error("Failed to save practice minutes:", err);
@@ -88,14 +137,17 @@ const PostPractice = () => {
   return (
     <View style={styles.container}>
       <Image
-        source={require("./assets/avatar.png")}
+        source={avatar}
         style={styles.avatar}
       />
 
       <View style={styles.timerBox}>
         <Text style={styles.timerText}>{formatTime()}</Text>
       </View>
-      <Text style={styles.minutesLabel}>minutes played</Text>
+      {/* <Text style={styles.minutesLabel}>minutes played</Text> */}
+      <Text style={styles.minutesLabel}>
+        {Math.floor(seconds / 60) === 0 ? "seconds played" : "minutes played"}
+      </Text>
 
       <Text style={styles.message}>
         Wow! That was beautiful!{"\n"}Musey seems to have really{"\n"}enjoyed your music.

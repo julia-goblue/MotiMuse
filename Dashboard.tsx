@@ -19,16 +19,22 @@ export default function Dashboard() {
   const [earnings, setEarnings] = useState(0);
   const [stars, setStars] = useState(0);
   const [minutesPracticedToday, setMinutes] = useState(0);
+  const [secondsPracticedToday, setSeconds] = useState(0);
   const [dailyGoalMinutes, setDailyGoalMinutes] = useState(20);
   const [weekData, setWeekData] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<null | string>(null);
   const [equippedHat, setEquippedHat] = useState<string | null>(null);
 
-  const progress =
-    dailyGoalMinutes > 0
-      ? Math.min(100, Math.round((minutesPracticedToday / dailyGoalMinutes) * 100))
-      : 0;
+  // const progress =
+  //   dailyGoalMinutes > 0
+  //     ? Math.min(100, Math.round((minutesPracticedToday / dailyGoalMinutes) * 100))
+  //     : 0;
+
+  const dailyGoalSeconds = dailyGoalMinutes * 60;
+  const progress = dailyGoalSeconds > 0
+  ? Math.min(100, Math.round((secondsPracticedToday / dailyGoalSeconds) * 100))
+  : 0;  
 
   // const progress = Math.round((minutesPracticedToday / dailyGoalMinutes) * 100);
 
@@ -52,6 +58,7 @@ export default function Dashboard() {
         setEarnings(data.currentEarnings || 0);
         setStars(data.totalStars || 0);
         setMinutes(data.minutesPracticedToday || 0);
+        setSeconds(data.secondsPracticedToday || 0);
         setDailyGoalMinutes(data.dailyGoalMinutes || 20);
         setEquippedHat(data.equippedHat ?? null);
         const raw = data.weeklyMinutes;
@@ -117,7 +124,6 @@ export default function Dashboard() {
       {/* Header */}
       <View style={styles.header}>
         <Image
-          {/*source={require('./assets/avatar.png')}*/}
           source={avatar}
           style={{ width: 50, height: 50 }}
         />
@@ -136,7 +142,8 @@ export default function Dashboard() {
 
       {/* Progress Ring */}
       <View style={styles.ringContainer}>
-        <ProgressRing progress={progress} minutes={minutesPracticedToday} />
+        {/* <ProgressRing progress={progress} minutes={minutesPracticedToday} /> */}
+        <ProgressRing progress={progress} seconds={secondsPracticedToday} />
       </View>
 
       {/* Weekly Bar Chart with Labels */}
