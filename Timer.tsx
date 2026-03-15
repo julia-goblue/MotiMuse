@@ -1,59 +1,71 @@
 import React, { useEffect, useRef, useState } from "react";
-import {
-  Image,
-  TextInput,
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-} from "react-native";
+import { Image, View, Text, StyleSheet, Pressable, Animated } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { getDatabase, ref, onValue } from "firebase/database";
-import { db, app } from "./firebaseConfig";
-import {getChosenAvatar} from "./Store"
+import { app } from "./firebaseConfig";
+import { getChosenAvatar } from "./Store";
 
+const WaveBar = ({ delay, isPlaying }: { delay: number; isPlaying: boolean }) => {
+  const anim = useRef(new Animated.Value(0.3)).current;
+  const loopRef = useRef<Animated.CompositeAnimation | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (isPlaying) {
+      // Start the loop
+      const loop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(anim, { toValue: 1, duration: 400 + delay * 50, useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 0.3, duration: 400 + delay * 50, useNativeDriver: true }),
+        ])
+      );
+      loopRef.current = loop;
+      timeoutRef.current = setTimeout(() => loop.start(), delay * 80);
+    } else {
+      // Pause — stop loop and snap back to rest position
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      loopRef.current?.stop();
+      Animated.timing(anim, { toValue: 0.3, duration: 200, useNativeDriver: true }).start();
+    }
+
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      loopRef.current?.stop();
+    };
+  }, [isPlaying]); // re-runs whenever isPlaying flips
+
+  return (
+    <Animated.View
+      style={{
+        width: 8,
+        height: 60,
+        backgroundColor: "#6EF2B2",
+        borderRadius: 4,
+        marginHorizontal: 3,
+        transform: [{ scaleY: anim }],
+      }}
+    />
+  );
+};
 
 const Timer = () => {
   const navigation = useNavigation<any>();
   const [seconds, setSeconds] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [text, setText] = useState("");
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const [equippedHat, setEquippedHat] = useState<string | null>(null);
 
-   useEffect(() => {
-  
-      //    (e.g., if you're using Firebase Auth, you'd use `auth.currentUser.uid`)
-      const db = getDatabase(app);
-      const userStatsRef = ref(db, 'userStats/testUser1');
-  
-      // 3. Attach a listener using onValue.
-      //    This function will be called immediately with the initial data,
-      //    and again every time the data at 'userStats/testUser1' changes.
-      const unsubscribe = onValue(userStatsRef, (snapshot) => {
-        if (snapshot.exists()) { // Check if data exists at the path
-          const data = snapshot.val();
-          console.log("Fetched data:", data); // Log the data to see what you received
-  
-          setEquippedHat(data.equippedHat ?? null);
-  
-        } 
-      }, (databaseError) => {
-        // 5. Handle any errors during the data fetch
-        console.error("Error fetching user stats:", databaseError);
-      });
-  
-      // 6. Return a cleanup function.
-      //    This is crucial for real-time listeners to prevent memory leaks.
-      //    When the component unmounts (is removed from the screen),
-      //    this function will be called to detach the listener.
-      return () => {
-        console.log("Detaching Firebase listener.");
-        unsubscribe();
-      };
-    }, []);
-  
-  const avatar = getChosenAvatar(equippedHat);
+  useEffect(() => {
+    const db = getDatabase(app);
+    const userStatsRef = ref(db, "userStats/testUser1");
+    const unsubscribe = onValue(userStatsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        setEquippedHat(data.equippedHat ?? null);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const startTimer = () => {
     intervalRef.current = setInterval(() => {
@@ -63,25 +75,18 @@ const Timer = () => {
 
   useEffect(() => {
     startTimer();
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, []);
 
   const formatTime = () => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   };
 
   const handlePause = () => {
-    if (paused) {
-      startTimer();
-      setPaused(false);
-    } else {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      setPaused(true);
-    }
+    if (paused) { startTimer(); setPaused(false); }
+    else { if (intervalRef.current) clearInterval(intervalRef.current); setPaused(true);}
   };
 
   const handleEndPractice = () => {
@@ -89,31 +94,42 @@ const Timer = () => {
     navigation.navigate("PostPractice", { seconds });
   };
 
+  const avatar = getChosenAvatar(equippedHat);
+  const barHeights = [0.5, 0.8, 1, 0.6, 0.9, 0.7, 1, 0.5, 0.8, 0.6, 1, 0.7, 0.9, 0.5, 0.8];
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Practice Timer</Text>
+      <Text style={styles.pieceTitle}>Practice Timer</Text>
 
-      <Image
-        source={avatar}
-        style={{ width: 200, height: 200 }}
-      />
+      <View style={styles.timerBox}>
+        <Text style={styles.timerText}>{formatTime()}</Text>
+      </View>
+      <Text style={styles.timerLabel}>minutes</Text>
 
-      {/* <TextInput
-        style={styles.title}
-        placeholder="What piece?"
-        value={text}
-        onChangeText={setText}
-      /> */}
+      <View style={styles.waveform}>
+        {barHeights.map((_, i) => (
+          <WaveBar key={i} delay={i} isPlaying={!paused}/>
+        ))}
+      </View>
 
-      <Text style={styles.timerText}>{formatTime()}</Text>
+      <View style={styles.characterArea}>
+        <View style={styles.bubbleRight}>
+          <Text style={styles.bubbleTextDark}>You're sounding great!</Text>
+        </View>
 
-      <View style={styles.layout}>
-        <Pressable style={styles.endButton} onPress={handlePause}>
-          <Text style={styles.endText}>{paused ? "Resume" : "Pause"}</Text>
+        <Image source={avatar} style={styles.avatar} />
+
+        {/* <View style={styles.bubbleLeft}>
+          <Text style={styles.bubbleTextLight}>Keep it up!</Text>
+        </View> */}
+      </View>
+
+      <View style={styles.buttonRow}>
+        <Pressable style={styles.button} onPress={handlePause}>
+          <Text style={styles.buttonText}>{paused ? "Resume" : "Pause"}</Text>
         </Pressable>
-
-        <Pressable style={styles.endButton} onPress={handleEndPractice}>
-          <Text style={styles.endText}>End</Text>
+        <Pressable style={styles.button} onPress={handleEndPractice}>
+          <Text style={styles.buttonText}>End</Text>
         </Pressable>
       </View>
     </View>
@@ -123,39 +139,102 @@ const Timer = () => {
 export default Timer;
 
 const styles = StyleSheet.create({
-  layout: {
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 20,
-    alignItems: "center",
-    marginBottom: 20,
-  },
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "600",
-    marginBottom: 30,
+  pieceTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1a6b5a",
+    marginBottom: 16,
+  },
+  timerBox: {
+    backgroundColor: "#1a6b5a",
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 14,
+    marginBottom: 6,
   },
   timerText: {
-    fontSize: 64,
-    fontWeight: "bold",
-    marginBottom: 40,
+    fontSize: 48,
+    fontWeight: "700",
+    color: "#EAFBB1",
+    letterSpacing: 2,
   },
-  endButton: {
+  timerLabel: {
+    fontSize: 14,
+    color: "#999",
+    marginBottom: 20,
+  },
+  waveform: {
+    flexDirection: "row",
+    alignItems: "center",
+    height: 90,
+    marginBottom: 32,
+  },
+  characterArea: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    height: 280,
+    // marginBottom: 40,
+    position: "relative",
+  },
+  avatar: {
+    width: 200,
+    height: 200,
+  },
+  bubbleRight: {
+    position: "absolute",
+    top: 10,
+    right: 16,
+    backgroundColor: "#1a6b5a",
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 16,
+    borderBottomRightRadius: 4,
+    maxWidth: 180,
+  },
+  bubbleTextDark: {
+    color: "#EAFBB1",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  bubbleLeft: {
+    position: "absolute",
+    bottom: 20,
+    left: 16,
+    backgroundColor: "#1a6b5a",
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 16,
+    borderBottomLeftRadius: 4,
+    maxWidth: 180,
+  },
+  bubbleTextLight: {
+    color: "#EAFBB1",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: 20,
+    marginTop: 24,
+  },
+  button: {
     backgroundColor: "#EAFBB1",
-    paddingHorizontal: 30,
+    // marginTop: 100,
+    paddingHorizontal: 40,
     paddingVertical: 14,
     borderRadius: 12,
   },
-  endText: {
-    color: "#666",
+  buttonText: {
     fontSize: 16,
     fontWeight: "600",
+    color: "#1a3a33",
   },
 });

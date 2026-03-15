@@ -26,15 +26,15 @@ export default function Dashboard() {
   const [error, setError] = useState<null | string>(null);
   const [equippedHat, setEquippedHat] = useState<string | null>(null);
 
-  // const progress =
-  //   dailyGoalMinutes > 0
-  //     ? Math.min(100, Math.round((minutesPracticedToday / dailyGoalMinutes) * 100))
-  //     : 0;
+  const progress =
+    dailyGoalMinutes > 0
+      ? Math.min(100, Math.round((minutesPracticedToday / dailyGoalMinutes) * 100))
+      : 0;
 
   const dailyGoalSeconds = dailyGoalMinutes * 60;
-  const progress = dailyGoalSeconds > 0
-  ? Math.min(100, Math.round((secondsPracticedToday / dailyGoalSeconds) * 100))
-  : 0;  
+  // const progress = dailyGoalSeconds > 0
+  // ? Math.min(100, Math.round((secondsPracticedToday / dailyGoalSeconds) * 100))
+  // : 0;  
 
   // const progress = Math.round((minutesPracticedToday / dailyGoalMinutes) * 100);
 
@@ -101,7 +101,7 @@ export default function Dashboard() {
   const daysWithPractice = weekData.filter((m) => m > 0).length;
   const avgSessionMinutes =
     daysWithPractice > 0 ? Math.round(totalWeekMinutes / daysWithPractice) : 0;
-  const maxBar = Math.max(...weekData, 1);
+  const maxBar = Math.max(dailyGoalMinutes, ...weekData);
 
   const CHART_BAR_WIDTH = 40;
   const CHART_GAP = 4;
@@ -142,8 +142,7 @@ export default function Dashboard() {
 
       {/* Progress Ring */}
       <View style={styles.ringContainer}>
-        {/* <ProgressRing progress={progress} minutes={minutesPracticedToday} /> */}
-        <ProgressRing progress={progress} seconds={secondsPracticedToday} />
+        <ProgressRing progress={progress} minutes={minutesPracticedToday} seconds={secondsPracticedToday} />
       </View>
 
       {/* Weekly Bar Chart with Labels */}
@@ -247,7 +246,7 @@ const styles = StyleSheet.create({
   },
   ringContainer: {
     alignItems: "center",
-    marginVertical: 16,
+    marginVertical: 40,
   },
   chartContainer: {
     marginTop: 4,
@@ -307,8 +306,10 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 14,
     alignItems: "center",
-    marginTop: 16,
+    marginTop: 32,
     marginHorizontal: 10,
+    width: "40%",
+    alignSelf: "center",
   },
   practiceText: {
     color: "white",

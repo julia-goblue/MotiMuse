@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from "react-native";
 import { getDatabase, ref, onValue, runTransaction } from "firebase/database";
 import { app } from "./firebaseConfig";
@@ -44,6 +45,8 @@ export default function Store() {
   const [stars, setStars] = useState(0);
   const [purchasing, setPurchasing] = useState(false);
   const [equippedHat, setEquippedHat] = useState<string | null>(null);
+  const [ownedHats, setOwnedHats] = useState<Record<string, boolean>>({});
+  const [activeTab, setActiveTab] = useState("Hats");
 
 
   useEffect(() => {
@@ -55,6 +58,7 @@ export default function Store() {
         setEarnings(data.currentEarnings ?? 0);
         setStars(data.totalStars ?? 0);
         setEquippedHat(data.equippedHat ?? null);
+        setOwnedHats(data.ownedHats ?? {});
       } else {
         setEarnings(0);
         setStars(0);
@@ -71,40 +75,56 @@ export default function Store() {
     setSelectedHat(hatId);
   };
 
-  const handlePurchase = async () => {
-    if (!selectedHat) return;
-    if (earnings < HAT_PRICE) {
-      Alert.alert("Not enough", `You need ${HAT_PRICE} to buy this item.`);
-      return;
-    }
-    setPurchasing(true);
+const handlePurchase = async () => {
+  if (!selectedHat) return;
+
+  if (ownedHats[selectedHat]) {
     try {
       const rtdb = getDatabase(app);
       const userStatsRef = ref(rtdb, USER_STATS_PATH);
       await runTransaction(userStatsRef, (current) => {
-        if (!current) {
-          current = { currentEarnings: 0, totalStars: 0 };
-        }
-        const currentEarnings = current.currentEarnings ?? 0;
-        if (currentEarnings < HAT_PRICE) return current;
-        return {
-          ...current,
-          currentEarnings: currentEarnings - HAT_PRICE,
-          ownedHats: { ...(current.ownedHats || {}), [selectedHat]: true },
-          equippedHat: selectedHat,
-        };
+        if (!current) return current;
+        return { ...current, equippedHat: selectedHat };
       });
       setSelectedHat(null);
     } catch (e) {
-      console.error("Purchase failed:", e);
-      Alert.alert("Purchase failed", "Something went wrong. Try again.");
-    } finally {
-      setPurchasing(false);
+      Alert.alert("Failed to equip", "Something went wrong.");
     }
-  };
+    return;
+  }
+
+  if (earnings < HAT_PRICE) {
+    Alert.alert("Not enough", `You need ${HAT_PRICE} to buy this item.`);
+    return;
+  }
+  setPurchasing(true);
+  try {
+    const rtdb = getDatabase(app);
+    const userStatsRef = ref(rtdb, USER_STATS_PATH);
+    await runTransaction(userStatsRef, (current) => {
+      if (!current) {
+        current = { currentEarnings: 0, totalStars: 0 };
+      }
+      const currentEarnings = current.currentEarnings ?? 0;
+      if (currentEarnings < HAT_PRICE) return current;
+      return {
+        ...current,
+        currentEarnings: currentEarnings - HAT_PRICE,
+        ownedHats: { ...(current.ownedHats || {}), [selectedHat]: true },
+        equippedHat: selectedHat,
+      };
+    });
+    setSelectedHat(null);
+  } catch (e) {
+    console.error("Purchase failed:", e);
+    Alert.alert("Purchase failed", "Something went wrong. Try again.");
+  } finally {
+    setPurchasing(false);
+  }
+};
 
   const canAfford = earnings >= HAT_PRICE;
-  const chosenAvatar = !selectedHat ? "./assets/Avatar 1.png" : "./assets/${selectedHat}_guy.png";
+  //const chosenAvatar = !selectedHat ? "./assets/Avatar 1.png" : "./assets/${selectedHat}_guy.png";
 
   return (
     <SafeAreaView style={styles.container}>
@@ -113,30 +133,31 @@ export default function Store() {
         <Text style={styles.title}>Store</Text>
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
-            <Text>{"$ " + earnings}</Text>
+            <Text style={styles.statText}>$ {earnings}</Text>
           </View>
           <View style={styles.statBox}>
-            <Text>{"★ " + stars}</Text>
+            <Text style={styles.statText}>★ {stars}</Text>
           </View>
         </View>
       </View>
 
+      {/* <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll}>
+      {["Hats", "Items", "Outfits", "Badges", "Themes"].map(tab => (
+        <TouchableOpacity
+          key={tab}
+          style={[styles.tabPill, activeTab === tab && styles.tabPillActive]}
+          onPress={() => setActiveTab(tab)}
+        >
+          <Text style={[styles.tabPillText, activeTab === tab && styles.tabPillTextActive]}>
+            {tab}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView> */}
       {/* Big Avatar */}
-      <View style={styles.ringContainer}> {/*NEED TO GET AVATAR IMAGES*/}
-        {(!selectedHat && <Image source={require("./assets/Avatar 1.png")} style={styles.big_img}/>)}
-        {(selectedHat == "OB" && <Image source={require("./assets/OB_guy.png")} style={styles.big_img}/>)}
-        {(selectedHat == "BB" && <Image source={require("./assets/BB_guy.png")} style={styles.big_img}/>)}
-        {(selectedHat == "GB" && <Image source={require("./assets/GB_guy.png")} style={styles.big_img}/>)}
-        {(selectedHat == "PB" && <Image source={require("./assets/PB_guy.png")} style={styles.big_img}/>)}
-        {(selectedHat == "OG" && <Image source={require("./assets/OG_guy.png")} style={styles.big_img}/>)}
-        {(selectedHat == "BG" && <Image source={require("./assets/BG_guy.png")} style={styles.big_img}/>)}
-        {(selectedHat == "GG" && <Image source={require("./assets/GG_guy.png")} style={styles.big_img}/>)}
-        {(selectedHat == "PG" && <Image source={require("./assets/PG_guy.png")} style={styles.big_img}/>)}
-        {(selectedHat == "OC" && <Image source={require("./assets/OC_guy.png")} style={styles.big_img}/>)}
-        {(selectedHat == "BC" && <Image source={require("./assets/BC_guy.png")} style={styles.big_img}/>)}
-        {(selectedHat == "GC" && <Image source={require("./assets/GC_guy.png")} style={styles.big_img}/>)}
-        {(selectedHat == "PC" && <Image source={require("./assets/PC_guy.png")} style={styles.big_img}/>)}
-      </View>
+      <View style={styles.ringContainer}>
+  <Image source={getChosenAvatar(selectedHat)} style={styles.big_img} />
+</View>
 
       {/* Store Block */}
       <View style={styles.mainStore}>
@@ -200,26 +221,26 @@ export default function Store() {
       </View>
 
       <View style={styles.buttonRow}>
-        {selectedHat && (
+        {(
           <View style={styles.purchased}>
-            <Text style={styles.priceText}>{"$ " + HAT_PRICE}</Text>
+            <Text style={styles.priceText}>{selectedHat ? "$ " + HAT_PRICE : "Select an item!"}</Text>
           </View>
         )}
-        {selectedHat && (
+        {(
           <TouchableOpacity
-            style={[
-              styles.purchase,
-              (!canAfford || purchasing) && styles.purchaseDisabled,
-            ]}
+          style={[
+            styles.purchase,
+            (!canAfford && !ownedHats[selectedHat ?? ""] || purchasing) && styles.purchaseDisabled,
+          ]}
             onPress={handlePurchase}
-            disabled={!canAfford || purchasing}
+            disabled={purchasing || (!ownedHats[selectedHat ?? ""] && !canAfford)}
           >
             {purchasing ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={styles.purchaseText}>
-                {canAfford ? "Purchase" : "Not enough"}
-              </Text>
+        <Text style={styles.purchaseText}>
+          {ownedHats[selectedHat ?? ""] ? "Equip" : canAfford ? "Purchase" : "Not enough"}
+        </Text>
             )}
           </TouchableOpacity>
         )}
@@ -244,6 +265,31 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "600",
   },
+  tabScroll: {
+  flexDirection: "row",
+  marginTop: 11,
+},
+tabPill: {
+  paddingHorizontal: 14,
+  paddingVertical: 6,
+  borderRadius: 20,
+  backgroundColor: "#f4f4f0",
+  borderWidth: 1.5,
+  borderColor: "#e8e8e4",
+  marginRight: 8,
+},
+tabPillActive: {
+  backgroundColor: "#1a6b5a",
+  borderColor: "#1a6b5a",
+},
+tabPillText: {
+  fontSize: 13,
+  fontWeight: "600",
+  color: "#666",
+},
+tabPillTextActive: {
+  color: "#EAFBB1",
+},
   statsRow: {
     flexDirection: "row",
   },
@@ -253,6 +299,10 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 10,
     marginLeft: 8,
+  },
+  statText: {
+    fontWeight: "600",
+    color: "#333",
   },
   ringContainer: {
     alignItems: "center",

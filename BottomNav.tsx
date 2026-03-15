@@ -2,7 +2,7 @@ import React from "react";
 import { View, StyleSheet, TouchableOpacity, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-type TabKey = "home" | "music" | "box" | "profile";
+type TabKey = "home" | "music" | "shirt" | "profile";
 
 type Props = {
   activeTab: TabKey;
@@ -33,10 +33,10 @@ export default function BottomNav({ activeTab, onTabPress }: Props) {
 
         <TouchableOpacity
           style={styles.iconBtn}
-          onPress={() => onTabPress("box")}
+          onPress={() => onTabPress("shirt")}
           activeOpacity={0.8}
         >
-          <Ionicons name="cube-outline" size={26} color={iconColor("box")} />
+          <Ionicons name="shirt-outline" size={26} color={iconColor("shirt")} />
         </TouchableOpacity>
 
         <TouchableOpacity

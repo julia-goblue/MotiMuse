@@ -46,7 +46,7 @@ function MainTabs() {
 
           if (route.name === "Dashboard") {
             iconName = "home-outline";
-          } else if (route.name === "Timer") {
+          } else if (route.name === "PracticeIntro") {
             iconName = "musical-notes-outline";
           } else if (route.name === "Store") {
             iconName = "cube-outline";
@@ -77,8 +77,8 @@ function MainTabs() {
     >
       <Tab.Screen name="Dashboard" component={Dashboard} />
       <Tab.Screen
-        name="Timer"
-        component={Timer}
+        name="PracticeIntro"
+        component={PracticeIntro}
         options={{
           tabBarStyle: { display: "none" },
         }}
@@ -103,6 +103,7 @@ export default function App() {
         <Stack.Screen name="PracticeMinutes" component={PracticeMinutesScreen} />
         <Stack.Screen name="MainTabs" component={MainTabs} />
         <Stack.Screen name="PracticeIntro" component={PracticeIntro} />
+         <Stack.Screen name="Timer" component={Timer} />
         <Stack.Screen name="PostPractice" component={PostPractice} />
       </Stack.Navigator>
     </NavigationContainer>

@@ -78,6 +78,7 @@ const PostPractice = () => {
             await update(userStatsRef, {
             minutesPracticedToday: increment(minutesPracticed),
             secondsPracticedToday: increment(seconds),
+            [`weeklyMinutes/${String((new Date().getDay() + 6) % 7)}`]: increment(minutesPracticed),
             });
         } catch (err) {
             console.error("Failed to save practice minutes:", err);

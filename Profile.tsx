@@ -23,7 +23,8 @@ export default function Profile() {
   const [editingName, setEditingName] = useState(false);
   const [editingGoal, setEditingGoal] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [nameLoading, setNameLoading] = useState(true); // CHANGED: split loading state for name only
 
   // Load goal from RTDB (same source as dashboard)
   useEffect(() => {
@@ -33,65 +34,98 @@ export default function Profile() {
       if (snapshot.exists()) {
         const data = snapshot.val();
         setGoalMinutes(String(data.dailyGoalMinutes ?? 20));
+        setName(String(data.dailyGoalMinutes ?? 20));
       } else {
         setGoalMinutes("20");
+        setName("Elliot");
       }
     });
     return () => unsubscribe();
   }, []);
 
-  // Load name from Firestore (sign-up name at users/{uid}); use cache when offline
+  // // Load name from Firestore (sign-up name at users/{uid}); use cache when offline
+  // useEffect(() => {
+  //   let cancelled = false;
+  //   const loadName = async () => {
+  //     const user = getAuth(app).currentUser;
+  //     if (!user) {
+  //       setNameLoading(false);
+  //       return;
+  //     }
+  //     try {
+  //       const userRef = doc(db, "users", user.uid);
+  //       let snap = null;
+  //       try {
+  //         snap = await getDocFromCache(userRef);
+  //       } catch {
+  //         try {
+  //           snap = await getDoc(userRef);
+  //         } catch {
+  //           // Offline and no cache; name stays empty
+  //         }
+  //       }
+  //       if (!cancelled && snap?.exists()) {
+  //         const data = snap.data();
+  //         setName(data?.name ?? "");
+  //       }
+  //     } catch (e) {
+  //       console.error("Failed to load name:", e);
+  //     } finally {
+  //       if (!cancelled) setLoading(false);
+  //     }
+  //   };
+  //   loadName();
+  //   return () => {
+  //     cancelled = true;
+  //   };
+  // }, []);
+
   useEffect(() => {
-    let cancelled = false;
-    const loadName = async () => {
-      const user = getAuth(app).currentUser;
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-      try {
-        const userRef = doc(db, "users", user.uid);
-        let snap = null;
-        try {
-          snap = await getDoc(userRef);
-        } catch {
-          try {
-            snap = await getDocFromCache(userRef);
-          } catch {
-            // Offline and no cache; name stays empty
-          }
-        }
-        if (!cancelled && snap?.exists()) {
-          const data = snap.data();
-          setName(data?.name ?? "");
-        }
-      } catch (e) {
-        console.error("Failed to load name:", e);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    loadName();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const db = getDatabase(app);
+  const userStatsRef = ref(db, "userStats/testUser1");
+  const unsubscribe = onValue(userStatsRef, (snapshot) => {
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+      setName(data.name ?? "");
+    }
+    setNameLoading(false);
+  }, (e) => {
+    console.error("Failed to load name:", e);
+    setNameLoading(false);
+  });
+  return () => unsubscribe();
+}, []);
+
+  // const handleSaveName = async () => {
+  //   const trimmed = name.trim();
+  //   setEditingName(false);
+  //   if (trimmed === "") return;
+  //   setSaving(true);
+  //   try {
+  //     const user = getAuth(app).currentUser;
+  //     if (user) {
+  //       await updateDoc(doc(db, "users", user.uid), { name: trimmed });
+  //     }
+  //   } catch (e) {
+  //     console.error("Failed to save name:", e);
+  //   }
+  //   setSaving(true);
+  // };
 
   const handleSaveName = async () => {
-    const trimmed = name.trim();
-    setEditingName(false);
-    if (trimmed === "") return;
-    setSaving(true);
-    try {
-      const user = getAuth(app).currentUser;
-      if (user) {
-        await updateDoc(doc(db, "users", user.uid), { name: trimmed });
+      const trimmed = name.trim();
+      setEditingName(false);
+      if (trimmed === "") return;
+      setSaving(true);
+      try {
+        const db = getDatabase(app);
+        const userStatsRef = ref(db, "userStats/testUser1");
+        await update(userStatsRef, { name: trimmed });
+      } catch (e) {
+        console.error("Failed to save name:", e);
       }
-    } catch (e) {
-      console.error("Failed to save name:", e);
-    }
-    setSaving(false);
-  };
+  setSaving(false);
+};
 
   const handleSaveGoal = async () => {
     const num = parseInt(goalMinutes, 10);
@@ -131,7 +165,11 @@ export default function Profile() {
 
         <View style={styles.section}>
           <Text style={styles.label}>Name</Text>
-          {editingName ? (
+          {nameLoading ? ( // Firestore still fetching — show a placeholder in just the name field
+            <View style={styles.valueRow}>
+              <Text style={[styles.value, { color: "#7AAEA3" }]}>Loading…</Text>
+            </View>
+            ) :editingName ? (
             <View style={styles.editRow}>
               <TextInput
                 style={styles.input}

@@ -71,9 +71,10 @@ export default function PracticeIntro() {
 
       <Pressable
         style={styles.startButton}
-        onPress={() =>
-          navigation.navigate("MainTabs", { screen: "Timer" })
-        }
+        // onPress={() =>
+        //   navigation.navigate("MainTabs", { screen: "Timer" })
+        // }
+        onPress={() => navigation.navigate("Timer")}
       >
         <Text style={styles.startButtonText}>Start!</Text>
       </Pressable>
