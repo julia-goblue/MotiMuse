@@ -12,6 +12,7 @@ import { useNavigation } from "@react-navigation/native";
 import { getDatabase, ref, onValue } from "firebase/database";
 import { db, app } from "./firebaseConfig";
 import {getChosenAvatar} from "./Store"
+import { getAuth } from "firebase/auth";
 
 const TEAL = "#1a6b5a";
 const LIGHT_YELLOW = "#EAFBB1";
@@ -25,8 +26,13 @@ export default function PracticeIntro() {
   useEffect(() => {
 
     //    (e.g., if you're using Firebase Auth, you'd use `auth.currentUser.uid`)
+    // const db = getDatabase(app);
+    // const userStatsRef = ref(db, 'userStats/testUser1');
+
+    const auth = getAuth(app);
+    const user = auth.currentUser;
     const db = getDatabase(app);
-    const userStatsRef = ref(db, 'userStats/testUser1');
+    const userStatsRef = ref(db, `userStats/${user?.uid}`);
 
     // 3. Attach a listener using onValue.
     //    This function will be called immediately with the initial data,

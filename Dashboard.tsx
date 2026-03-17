@@ -8,6 +8,7 @@ import {
   SafeAreaView,
 } from "react-native";
 import { getDatabase, ref, onValue } from "firebase/database";
+import { getAuth, initializeAuth } from "firebase/auth";
 import { db, app } from "./firebaseConfig";
 import { useNavigation } from "@react-navigation/native";
 import ProgressRing from "./ProgressRing";
@@ -42,8 +43,15 @@ export default function Dashboard() {
   useEffect(() => {
 
     //    (e.g., if you're using Firebase Auth, you'd use `auth.currentUser.uid`)
+    // const db = getDatabase(app);
+    // const userStatsRef = ref(db, 'userStats/testUser1');
+
+    const auth = getAuth(app);
+    const user = auth.currentUser;
     const db = getDatabase(app);
-    const userStatsRef = ref(db, 'userStats/testUser1');
+    const userStatsRef = ref(db, `userStats/${user?.uid}`);
+
+    
 
     // 3. Attach a listener using onValue.
     //    This function will be called immediately with the initial data,
@@ -61,14 +69,16 @@ export default function Dashboard() {
         setSeconds(data.secondsPracticedToday || 0);
         setDailyGoalMinutes(data.dailyGoalMinutes || 20);
         setEquippedHat(data.equippedHat ?? null);
-        const raw = data.weeklyMinutes;
+       const raw = data.weeklyMinutes;
         if (raw && typeof raw === "object" && !Array.isArray(raw)) {
           setWeekData([
             raw["0"] ?? 0, raw["1"] ?? 0, raw["2"] ?? 0, raw["3"] ?? 0,
             raw["4"] ?? 0, raw["5"] ?? 0, raw["6"] ?? 0,
           ]);
-        } else if (Array.isArray(raw) && raw.length >= 7) {
-          setWeekData(raw.slice(0, 7));
+        } else if (Array.isArray(raw)) {
+          const full = [0, 0, 0, 0, 0, 0, 0];
+          raw.forEach((val, i) => { full[i] = val ?? 0; });
+          setWeekData(full);
         } else {
           setWeekData([0, 0, 0, 0, 0, 0, 0]);
         }

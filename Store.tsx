@@ -12,9 +12,16 @@ import {
 } from "react-native";
 import { getDatabase, ref, onValue, runTransaction } from "firebase/database";
 import { app } from "./firebaseConfig";
+import {getAuth} from "firebase/auth";
 
 const HAT_PRICE = 15;
-const USER_STATS_PATH = "userStats/testUser1";
+const auth = getAuth(app);
+const user = auth.currentUser;
+const db = getDatabase(app);
+
+
+// const USER_STATS_PATH = `userStats/${user?.uid}`;
+// const USER_STATS_PATH = "userStats/testUser1";
 
 export function getChosenAvatar(selectedHat: string | null) {
   const avatars: Record<string, any> = {
@@ -50,8 +57,15 @@ export default function Store() {
 
 
   useEffect(() => {
-    const rtdb = getDatabase(app);
-    const userStatsRef = ref(rtdb, USER_STATS_PATH);
+    // const rtdb = getDatabase(app);
+    // const userStatsRef = ref(rtdb, USER_STATS_PATH);
+
+    const userStatsRef = ref(db, `userStats/${user?.uid}`);
+
+    // const auth = getAuth(app);
+    // const user = auth.currentUser;
+    // const db = getDatabase(app);
+    // const userStatsRef = ref(db, `userStats/${user?.uid}`);
     const unsubscribe = onValue(userStatsRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
@@ -68,9 +82,6 @@ export default function Store() {
   }, []);
 
 
-  
-  //export default chosenAvatar  = !selectedHat ? "./assets/Avatar 1.png" : "./assets/${selectedHat}_guy.png";
-
   const handleSelectHat = (hatId: string) => {
     setSelectedHat(hatId);
   };
@@ -80,8 +91,10 @@ const handlePurchase = async () => {
 
   if (ownedHats[selectedHat]) {
     try {
-      const rtdb = getDatabase(app);
-      const userStatsRef = ref(rtdb, USER_STATS_PATH);
+      // const rtdb = getDatabase(app);
+      // const userStatsRef = ref(rtdb, USER_STATS_PATH);
+
+      const userStatsRef = ref(db, `userStats/${user?.uid}`);
       await runTransaction(userStatsRef, (current) => {
         if (!current) return current;
         return { ...current, equippedHat: selectedHat };
@@ -99,8 +112,7 @@ const handlePurchase = async () => {
   }
   setPurchasing(true);
   try {
-    const rtdb = getDatabase(app);
-    const userStatsRef = ref(rtdb, USER_STATS_PATH);
+    const userStatsRef = ref(db, `userStats/${user?.uid}`);
     await runTransaction(userStatsRef, (current) => {
       if (!current) {
         current = { currentEarnings: 0, totalStars: 0 };
@@ -114,7 +126,7 @@ const handlePurchase = async () => {
         equippedHat: selectedHat,
       };
     });
-    setSelectedHat(null);
+    setSelectedHat(equippedHat);
   } catch (e) {
     console.error("Purchase failed:", e);
     Alert.alert("Purchase failed", "Something went wrong. Try again.");
@@ -156,7 +168,7 @@ const handlePurchase = async () => {
     </ScrollView> */}
       {/* Big Avatar */}
       <View style={styles.ringContainer}>
-  <Image source={getChosenAvatar(selectedHat)} style={styles.big_img} />
+  <Image source={getChosenAvatar(!selectedHat ? equippedHat : selectedHat)} style={styles.big_img} />
 </View>
 
       {/* Store Block */}
@@ -239,7 +251,7 @@ const handlePurchase = async () => {
               <ActivityIndicator size="small" color="#fff" />
             ) : (
         <Text style={styles.purchaseText}>
-          {ownedHats[selectedHat ?? ""] ? "Equip" : canAfford ? "Purchase" : "Not enough"}
+          {ownedHats[equippedHat ?? ""] ? "Equipped" :(ownedHats[selectedHat ?? ""] ? "Equip" : (canAfford ? "Purchase" : "Not enough"))}
         </Text>
             )}
           </TouchableOpacity>

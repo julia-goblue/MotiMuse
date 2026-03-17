@@ -4,7 +4,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 // import { getFirestore, doc, updateDoc, increment } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 // import { getDatabase, ref, runTransaction } from "firebase/database";
-import { getDatabase, ref, update, increment, onValue } from 'firebase/database';
+import { getDatabase, ref, update, increment, onValue, runTransaction } from 'firebase/database';
 import { app } from "./firebaseConfig";
 import {getChosenAvatar} from "./Store"
 
@@ -20,8 +20,12 @@ const PostPractice = () => {
      useEffect(() => {
     
         //    (e.g., if you're using Firebase Auth, you'd use `auth.currentUser.uid`)
+        // const db = getDatabase(app);
+        // const userStatsRef = ref(db, 'userStats/testUser1');
+        const auth = getAuth(app);
+        const user = auth.currentUser;
         const db = getDatabase(app);
-        const userStatsRef = ref(db, 'userStats/testUser1');
+        const userStatsRef = ref(db, `userStats/${user?.uid}`);
     
         // 3. Attach a listener using onValue.
         //    This function will be called immediately with the initial data,
@@ -69,67 +73,66 @@ const PostPractice = () => {
   return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
 };
 
-    // Save minutes to database
-  useEffect(() => {
-    const savePractice = async () => {
-        try {
-            const db = getDatabase(app);
-            const userStatsRef = ref(db, 'userStats/testUser1');
-            await update(userStatsRef, {
-            minutesPracticedToday: increment(minutesPracticed),
-            secondsPracticedToday: increment(seconds),
-            [`weeklyMinutes/${String((new Date().getDay() + 6) % 7)}`]: increment(minutesPracticed),
-            });
-        } catch (err) {
-            console.error("Failed to save practice minutes:", err);
-        }
-        };
-
-    savePractice();
-  }, []);
-
-  // // Save minutes + rewards to Firestore and Realtime DB (dashboard/shop + weekly chart)
+  //   // Save minutes to database
   // useEffect(() => {
   //   const savePractice = async () => {
-  //     const earnedDollars = Math.floor(minutesPracticed * 0.8);
-  //     const earnedStars = Math.max(1, Math.floor(minutesPracticed / 10));
+  //       try {
+  //           // const db = getDatabase(app);
+  //           // const userStatsRef = ref(db, 'userStats/testUser1');
 
-  //     try {
-  //       const auth = getAuth();
-  //       const user = auth.currentUser;
-  //       if (user) {
-  //         const db = getFirestore();
-  //         const userRef = doc(db, "users", user.uid);
-  //         await updateDoc(userRef, {
+  //           const auth = getAuth(app);
+  //           const user = auth.currentUser;
+  //           const db = getDatabase(app);
+  //           const userStatsRef = ref(db, `userStats/${user?.uid}`);
+  //           await update(userStatsRef, {
   //           minutesPracticedToday: increment(minutesPracticed),
-  //         });
+  //           secondsPracticedToday: increment(seconds),
+  //           [`weeklyMinutes/${String((new Date().getDay() + 6) % 7)}`]: increment(minutesPracticed),
+  //           });
+  //       } catch (err) {
+  //           console.error("Failed to save practice minutes:", err);
   //       }
-
-  //       const rtdb = getDatabase(app);
-  //       const userStatsRef = ref(rtdb, "userStats/testUser1");
-  //       const dayIndex = (new Date().getDay() + 6) % 7; // Mon=0 .. Sun=6
-  //       const key = String(dayIndex);
-
-  //       await runTransaction(userStatsRef, (current) => {
-  //         const next = current != null ? { ...current } : {};
-  //         next.minutesPracticedToday = (next.minutesPracticedToday ?? 0) + minutesPracticed;
-  //         next.currentEarnings = (next.currentEarnings ?? 0) + earnedDollars;
-  //         next.totalStars = (next.totalStars ?? 0) + earnedStars;
-
-  //         const prevWeek = next.weeklyMinutes && typeof next.weeklyMinutes === "object"
-  //           ? { ...next.weeklyMinutes }
-  //           : { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0 };
-  //         next.weeklyMinutes = { ...prevWeek, [key]: (prevWeek[key] ?? 0) + minutesPracticed };
-
-  //         return next;
-  //       });
-  //     } catch (err) {
-  //       console.error("Failed to save practice:", err);
-  //     }
-  //   };
+  //       };
 
   //   savePractice();
-  // }, [minutesPracticed]);
+  // }, []);
+
+  // Save minutes + rewards to Firestore and Realtime DB (dashboard/shop + weekly chart)
+  useEffect(() => {
+    const savePractice = async () => {
+      // used to be * 0.8 but for testing * 3
+      const earnedDollars = Math.floor(minutesPracticed * 10);
+      const earnedStars = Math.max(1, Math.floor(minutesPracticed / 10));
+
+      try {
+        const auth = getAuth(app);
+        const user = auth.currentUser;
+
+        const rtdb = getDatabase(app);
+        const userStatsRef = ref(rtdb, `userStats/${user?.uid}`);
+        const dayIndex = (new Date().getDay() + 6) % 7; // Mon=0 .. Sun=6
+        const key = String(dayIndex);
+
+        await runTransaction(userStatsRef, (current) => {
+          const next = current != null ? { ...current } : {};
+          next.minutesPracticedToday = (next.minutesPracticedToday ?? 0) + minutesPracticed;
+          next.currentEarnings = (next.currentEarnings ?? 0) + earnedDollars;
+          next.totalStars = (next.totalStars ?? 0) + earnedStars;
+
+          const prevWeek = next.weeklyMinutes && typeof next.weeklyMinutes === "object"
+            ? { ...next.weeklyMinutes }
+            : { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0 };
+          next.weeklyMinutes = { ...prevWeek, [key]: (prevWeek[key] ?? 0) + minutesPracticed };
+
+          return next;
+        });
+      } catch (err) {
+        console.error("Failed to save practice:", err);
+      }
+    };
+
+    savePractice();
+  }, [minutesPracticed]);
 
   const handleClaimRewards = () => {
     navigation.navigate("MainTabs");
@@ -156,7 +159,7 @@ const PostPractice = () => {
 
       <View style={styles.rewardsRow}>
         <View style={styles.rewardBox}>
-          <Text style={styles.rewardText}>$ {Math.floor(minutesPracticed * 0.8)}</Text>
+          <Text style={styles.rewardText}>$ {Math.floor(minutesPracticed * 10)}</Text>
         </View>
         <View style={styles.rewardBox}>
           <Text style={styles.rewardText}>★ {Math.max(1, Math.floor(minutesPracticed / 10))}</Text>

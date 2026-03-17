@@ -13,9 +13,13 @@ import {
 import { getAuth } from "firebase/auth";
 import { getDoc, getDocFromCache, doc, updateDoc } from "firebase/firestore";
 import { getDatabase, ref, onValue, update } from "firebase/database";
-import { app, db } from "./firebaseConfig";
+import { app} from "./firebaseConfig";
 
-const USER_STATS_PATH = "userStats/testUser1";
+
+const auth = getAuth(app);
+const user = auth.currentUser;
+const db = getDatabase(app);
+const userStatsRef = ref(db, `userStats/${user?.uid}`);
 
 export default function Profile() {
   const [name, setName] = useState("");
@@ -28,8 +32,9 @@ export default function Profile() {
 
   // Load goal from RTDB (same source as dashboard)
   useEffect(() => {
-    const rtdb = getDatabase(app);
-    const userStatsRef = ref(rtdb, USER_STATS_PATH);
+
+
+    
     const unsubscribe = onValue(userStatsRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
@@ -139,7 +144,7 @@ export default function Profile() {
     try {
       const rtdb = getDatabase(app);
       const value = Math.min(999, Math.max(1, parseInt(goalMinutes, 10) || 20));
-      await update(ref(rtdb, USER_STATS_PATH), { dailyGoalMinutes: value });
+      await update(userStatsRef, { dailyGoalMinutes: value });
     } catch (e) {
       console.error("Failed to save goal:", e);
     }

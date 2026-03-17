@@ -4,6 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import { getDatabase, ref, onValue } from "firebase/database";
 import { app } from "./firebaseConfig";
 import { getChosenAvatar } from "./Store";
+import { getAuth } from "firebase/auth";
 
 const WaveBar = ({ delay, isPlaying }: { delay: number; isPlaying: boolean }) => {
   const anim = useRef(new Animated.Value(0.3)).current;
@@ -56,8 +57,13 @@ const Timer = () => {
   const [equippedHat, setEquippedHat] = useState<string | null>(null);
 
   useEffect(() => {
+    // const db = getDatabase(app);
+    // const userStatsRef = ref(db, "userStats/testUser1");
+
+    const auth = getAuth(app);
+    const user = auth.currentUser;
     const db = getDatabase(app);
-    const userStatsRef = ref(db, "userStats/testUser1");
+    const userStatsRef = ref(db, `userStats/${user?.uid}`);
     const unsubscribe = onValue(userStatsRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
