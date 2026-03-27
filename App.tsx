@@ -17,6 +17,7 @@ import {
 } from "./OnboardingFlow";
 import PostPractice from "./PostPractice";
 import PracticeIntro from "./PracticeIntro";
+import Egg from "./Egg";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
