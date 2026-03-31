@@ -75,6 +75,7 @@ export default function PracticeIntro() {
         />
       </View>
 
+          <View style={styles.buttonRow}>
       <Pressable
         style={styles.startButton}
         // onPress={() =>
@@ -82,8 +83,15 @@ export default function PracticeIntro() {
         // }
         onPress={() => navigation.navigate("Timer")}
       >
-        <Text style={styles.startButtonText}>Start!</Text>
+        <Text style={styles.startButtonText}>Start</Text>
       </Pressable>
+      <Pressable
+        style={styles.backButton}
+        onPress={() => navigation.navigate("Dashboard")}
+      >
+        <Text style={styles.startButtonText}>Back</Text>
+      </Pressable>
+      </View>
     </SafeAreaView>
   );
 }
@@ -120,8 +128,31 @@ const styles = StyleSheet.create({
     width: 220,
     height: 220,
   },
+    buttonRow: {
+    flexDirection: "row",
+    gap: 20,
+    marginTop: 24,
+  },
   startButton: {
     backgroundColor: LIGHT_YELLOW,
+    paddingVertical: 18,
+    paddingHorizontal: 56,
+    borderRadius: 14,
+    marginBottom: 48,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  backButton: {
+     backgroundColor: LIGHT_YELLOW,
     paddingVertical: 18,
     paddingHorizontal: 56,
     borderRadius: 14,

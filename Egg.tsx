@@ -7,6 +7,7 @@ import {
   Pressable,
   Image,
   Platform,
+  TouchableOpacity,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { getDatabase, ref, onValue } from "firebase/database";
@@ -17,32 +18,37 @@ import { getAuth } from "firebase/auth";
 const TEAL = "#1a6b5a";
 const LIGHT_YELLOW = "#EAFBB1";
 
-export default function PracticeIntro() {
+export function getChosenEgg(selectedHat: string | null) {
+  const eggs: Record<string, any> = {
+    P: require("./assets/p_egg.png"),
+    B: require("./assets/b_egg.png"),
+    G: require("./assets/g_egg.png"),
+  };
+
+  if (!museyColor) {
+    return require("./assets/g_egg.png");
+  }
+
+  return eggs[museyColor];
+}
+
+export default function Egg() {
   const navigation = useNavigation<any>();
-  const [equippedHat, setEquippedHat] = useState<string | null>(null);
+  const [museyColor, setMuseyColor] = useState<string | null>(null);
 
   
 
   useEffect(() => {
-
-    //    (e.g., if you're using Firebase Auth, you'd use `auth.currentUser.uid`)
-    // const db = getDatabase(app);
-    // const userStatsRef = ref(db, 'userStats/testUser1');
 
     const auth = getAuth(app);
     const user = auth.currentUser;
     const db = getDatabase(app);
     const userStatsRef = ref(db, `userStats/${user?.uid}`);
 
-    // 3. Attach a listener using onValue.
-    //    This function will be called immediately with the initial data,
-    //    and again every time the data at 'userStats/testUser1' changes.
     const unsubscribe = onValue(userStatsRef, (snapshot) => {
       if (snapshot.exists()) { // Check if data exists at the path
         const data = snapshot.val();
-        console.log("Fetched data:", data); // Log the data to see what you received
-
-        setEquippedHat(data.equippedHat ?? null);
+        console.log("Fetched data:", data); 
 
       } 
     }, (databaseError) => {
@@ -50,39 +56,33 @@ export default function PracticeIntro() {
       console.error("Error fetching user stats:", databaseError);
     });
 
-    // 6. Return a cleanup function.
-    //    This is crucial for real-time listeners to prevent memory leaks.
-    //    When the component unmounts (is removed from the screen),
-    //    this function will be called to detach the listener.
     return () => {
       console.log("Detaching Firebase listener.");
       unsubscribe();
     };
   }, []);
 
+  const handleMuseyColor = (eggColor: string) => {
+    setMuseyColor(eggColor);
+  };
+
    //const avatar = getChosenAvatar(equippedHat);
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.line1}>Musey wants to hear your music.</Text>
-      <Text style={styles.line2}>Let's play!</Text>
+      <Text style={styles.line2}>Select your egg!</Text>
+      <Text style={styles.line1}>The more you practice, the faster they grow! They’re here to listen to your music and help you play</Text>
 
       <View style={styles.characterWrap}>
-        <Image
-           source={require("./assets/p_egg.png")}
-          style={styles.character}
-          resizeMode="contain"
-        />
-        <Image
-           source={require("./assets/g_egg.png")}
-          style={styles.character}
-          resizeMode="contain"
-        />
-        <Image
-           source={require("./assets/b_egg.png")}
-          style={styles.character}
-          resizeMode="contain"
-        />
+        <TouchableOpacity style={styles.character} onPress={() => setMuseyColor("P")}>
+          <Image source={require("./assets/p_egg.png")}/>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.character} onPress={() => setMuseyColor("G")}>
+          <Image source={require("./assets/g_egg.png")}/>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.character} onPress={() => setMuseyColor("B")}>
+          <Image source={require("./assets/b_egg.png")}/>
+        </TouchableOpacity>
       </View>
 
       <Pressable
@@ -90,7 +90,7 @@ export default function PracticeIntro() {
         // onPress={() =>
         //   navigation.navigate("MainTabs", { screen: "Timer" })
         // }
-        onPress={() => navigation.navigate("Timer")}
+        onPress={() => navigation.navigate("FirstTimer")}
       >
         <Text style={styles.startButtonText}>Start!</Text>
       </Pressable>
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: TEAL,
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: 55,
     fontWeight: "500",
   },
   line2: {
@@ -118,17 +118,18 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: TEAL,
     textAlign: "center",
-    marginBottom: 40,
+    marginBottom: 10,
   },
   characterWrap: {
-    flex: 1,
-    justifyContent: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    maxHeight: 280,
+    gap: 5,
+    marginBottom: 100,
   },
   character: {
-    width: 220,
-    height: 220,
+    width: 110,
+    height: 110,
   },
   startButton: {
     backgroundColor: LIGHT_YELLOW,

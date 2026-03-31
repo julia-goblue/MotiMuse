@@ -6,6 +6,7 @@ import {
   Text,
   StyleSheet,
   SafeAreaView,
+  TouchableOpacity,
 } from "react-native";
 import { getDatabase, ref, onValue } from "firebase/database";
 import { getAuth, initializeAuth } from "firebase/auth";
@@ -133,10 +134,10 @@ export default function Dashboard() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Image
+        <TouchableOpacity onPress={() => navigation.navigate("avatar")}> <Image
           source={avatar}
           style={{ width: 50, height: 50 }}
-        />
+        /> </TouchableOpacity>
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
             <Text style={styles.statText}>$ {earnings}</Text>
@@ -209,12 +210,21 @@ export default function Dashboard() {
       </Text>
 
       {/* Practice Button – opens intro then Timer */}
+
+      <Pressable
+        onPress={() => navigation.navigate("Egg")}
+        style={styles.practiceButton}
+      >
+        <Text style={styles.practiceText}>Egg!</Text>
+      </Pressable>
       <Pressable
         onPress={() => navigation.navigate("PracticeIntro")}
         style={styles.practiceButton}
       >
         <Text style={styles.practiceText}>Let's Practice!</Text>
       </Pressable>
+
+      
     </SafeAreaView>
   );
 }

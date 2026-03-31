@@ -7,15 +7,62 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  ScrollView,
+  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getDatabase, ref, onValue, runTransaction } from "firebase/database";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { Ionicons } from "@expo/vector-icons";
 import { app } from "./firebaseConfig";
 
 const HAT_PRICE = 15;
 const auth = getAuth(app);
 const db = getDatabase(app);
+
+const HAT_IMAGES: Record<string, any> = {
+  OB: require("./assets/OB_hat.png"),
+  BB: require("./assets/BB_hat.png"),
+  GB: require("./assets/GB_hat.png"),
+  PB: require("./assets/PB_hat.png"),
+  OG: require("./assets/OG_hat.png"),
+  BG: require("./assets/BG_hat.png"),
+  GG: require("./assets/GG_hat.png"),
+  PG: require("./assets/PG_hat.png"),
+  OC: require("./assets/OC_hat.png"),
+  BC: require("./assets/BC_hat.png"),
+  GC: require("./assets/GC_hat.png"),
+  PC: require("./assets/PC_hat.png"),
+};
+
+const HAT_IDS = Object.keys(HAT_IMAGES);
+
+const HAT_NAMES: Record<string, string> = {
+  OB: "Orange Cap",
+  BB: "Berry Cap",
+  GB: "Mint Cap",
+  PB: "Plum Cap",
+  OG: "Sunset Hat",
+  BG: "Sky Hat",
+  GG: "Lime Hat",
+  PG: "Top Hat",
+  OC: "Ocean Cap",
+  BC: "Cowboy Hat",
+  GC: "Forest Cap",
+  PC: "Violet Cap",
+};
+
+const CATEGORIES: {
+  key: string;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { key: "Hats", label: "Hats", icon: "ellipse-outline" },
+  { key: "Bowties", label: "Bowties", icon: "link-outline" },
+  { key: "Suits", label: "Suits", icon: "shirt-outline" },
+  { key: "Held", label: "Held", icon: "sparkles-outline" },
+  { key: "Extras", label: "Extras", icon: "diamond-outline" },
+];
 
 export function getChosenAvatar(selectedHat: string | null) {
   const avatars: Record<string, any> = {
@@ -48,9 +95,9 @@ export default function Store() {
   const [equippedHat, setEquippedHat] = useState<string | null>(null);
   const [ownedHats, setOwnedHats] = useState<Record<string, boolean>>({});
   const [activeTab, setActiveTab] = useState("Hats");
+  const [viewMode, setViewMode] = useState<"shop" | "closet">("closet");
   const [uid, setUid] = useState<string | null>(null);
 
-  // Wait for Firebase Auth to resolve
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) setUid(user.uid);
@@ -59,7 +106,6 @@ export default function Store() {
     return () => unsubscribe();
   }, []);
 
-  // Subscribe to RTDB only once uid is available
   useEffect(() => {
     if (!uid) return;
 
@@ -87,13 +133,13 @@ export default function Store() {
     if (!selectedHat || !uid) return;
 
     if (ownedHats[selectedHat]) {
+      setEquippedHat(selectedHat); 
       try {
         const userStatsRef = ref(db, `userStats/${uid}`);
         await runTransaction(userStatsRef, (current) => {
           if (!current) return current;
           return { ...current, equippedHat: selectedHat };
         });
-        setSelectedHat(null);
       } catch (e) {
         Alert.alert("Failed to equip", "Something went wrong.");
       }
@@ -131,9 +177,36 @@ export default function Store() {
 
   const canAfford = earnings >= HAT_PRICE;
 
+  const previewHat = !selectedHat ? equippedHat : selectedHat;
+  const previewAvatar = getChosenAvatar(previewHat);
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.title}>Shop</Text>
+            <View style={styles.headerAvatarWrap}>
+              <Image source={getChosenAvatar(equippedHat)} style={styles.headerAvatar} />
+            </View>
+          </View>
+          <View style={styles.statsRow}>
+            <View style={styles.statCapsule}>
+              <Ionicons name="bag-handle-outline" size={16} color="#333" />
+              <Text style={styles.statText}>{earnings}</Text>
+            </View>
+            <View style={styles.statCapsule}>
+              <Ionicons name="star" size={16} color="#333" />
+              <Text style={styles.statText}>{stars}</Text>
+            </View>
+          </View>
+        </View> */}
+
+   {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Store</Text>
         <View style={styles.statsRow}>
@@ -146,87 +219,140 @@ export default function Store() {
         </View>
       </View>
 
-      {/* Big Avatar */}
-      <View style={styles.ringContainer}>
-        <Image
-          source={getChosenAvatar(!selectedHat ? equippedHat : selectedHat)}
-          style={styles.big_img}
-        />
-      </View>
-
-      {/* Store Block */}
-      <View style={styles.mainStore}>
-        <View style={styles.storeRow}>
-          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("OB")}>
-            <Image source={require("./assets/OB_hat.png")} style={[styles.hat_img, selectedHat === "OB" && styles.selected_hat]} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("BB")}>
-            <Image source={require("./assets/BB_hat.png")} style={[styles.hat_img, selectedHat === "BB" && styles.selected_hat]} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("GB")}>
-            <Image source={require("./assets/GB_hat.png")} style={[styles.hat_img, selectedHat === "GB" && styles.selected_hat]} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("PB")}>
-            <Image source={require("./assets/PB_hat.png")} style={[styles.hat_img, selectedHat === "PB" && styles.selected_hat]} />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.storeRow}>
-          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("OG")}>
-            <Image source={require("./assets/OG_hat.png")} style={[styles.hat_img, selectedHat === "OG" && styles.selected_hat]} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("BG")}>
-            <Image source={require("./assets/BG_hat.png")} style={[styles.hat_img, selectedHat === "BG" && styles.selected_hat]} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("GG")}>
-            <Image source={require("./assets/GG_hat.png")} style={[styles.hat_img, selectedHat === "GG" && styles.selected_hat]} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("PG")}>
-            <Image source={require("./assets/PG_hat.png")} style={[styles.hat_img, selectedHat === "PG" && styles.selected_hat]} />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.storeRow}>
-          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("OC")}>
-            <Image source={require("./assets/OC_hat.png")} style={[styles.hat_img, selectedHat === "OC" && styles.selected_hat]} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("BC")}>
-            <Image source={require("./assets/BC_hat.png")} style={[styles.hat_img, selectedHat === "BC" && styles.selected_hat]} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("GC")}>
-            <Image source={require("./assets/GC_hat.png")} style={[styles.hat_img, selectedHat === "GC" && styles.selected_hat]} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("PC")}>
-            <Image source={require("./assets/PC_hat.png")} style={[styles.hat_img, selectedHat === "PC" && styles.selected_hat]} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.buttonRow}>
-        <View style={styles.purchased}>
-          <Text style={styles.priceText}>{selectedHat ? "$ " + HAT_PRICE : "Select an item!"}</Text>
-        </View>
-        <TouchableOpacity
-          style={[
-            styles.purchase,
-            (!canAfford && !ownedHats[selectedHat ?? ""] || purchasing) && styles.purchaseDisabled,
-          ]}
-          onPress={handlePurchase}
-          disabled={purchasing || (!ownedHats[selectedHat ?? ""] && !canAfford)}
-        >
-          {purchasing ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.purchaseText}>
-              {ownedHats[equippedHat ?? ""]
-                ? "Equipped"
-                : ownedHats[selectedHat ?? ""]
-                ? "Equip"
-                : canAfford
-                ? "Purchase"
-                : "Not enough"}
+        <View style={styles.modeToggle}>
+          <Pressable
+            style={[styles.modePill, viewMode === "shop" && styles.modePillActive]}
+            onPress={() => setViewMode("shop")}
+          >
+            <Ionicons
+              name="gift-outline"
+              size={18}
+              color={viewMode === "shop" ? "#1a6b5a" : "#666"}
+            />
+            <Text style={[styles.modePillText, viewMode === "shop" && styles.modePillTextActive]}>
+              Shop
             </Text>
-          )}
-        </TouchableOpacity>
-      </View>
+          </Pressable>
+          <Pressable
+            style={[styles.modePill, viewMode === "closet" && styles.modePillActive]}
+            onPress={() => setViewMode("closet")}
+          >
+            <Ionicons
+              name="shirt-outline"
+              size={18}
+              color={viewMode === "closet" ? "#1a6b5a" : "#666"}
+            />
+            <Text style={[styles.modePillText, viewMode === "closet" && styles.modePillTextActive]}>
+              Closet
+            </Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.previewFrame}>
+          <Image source={previewAvatar} style={styles.previewAvatar} />
+          <View style={styles.equippedSlot}>
+            {equippedHat ? (
+              <Image source={HAT_IMAGES[equippedHat]} style={styles.equippedHatThumb} />
+            ) : (
+              <View style={styles.equippedPlaceholder} />
+            )}
+          </View>
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryScroll}
+        >
+          {CATEGORIES.map((cat) => {
+            const isActive = activeTab === cat.key;
+            const isHats = cat.key === "Hats";
+            return (
+              <Pressable
+                key={cat.key}
+                style={[
+                  styles.categoryPill,
+                  isActive && styles.categoryPillActive,
+                  !isHats && styles.categoryPillDisabled,
+                ]}
+                onPress={() => isHats && setActiveTab(cat.key)}
+                disabled={!isHats}
+              >
+                <Ionicons
+                  name={cat.icon}
+                  size={15}
+                  color={isActive ? "#FFFFFF" : "#666"}
+                />
+                <Text style={[styles.categoryPillText, isActive && styles.categoryPillTextActive]}>
+                  {cat.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
+        {activeTab === "Hats" ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.cardsRow}
+          >
+            {HAT_IDS.map((id) => {
+              const selected = selectedHat === id;
+              const wearing = equippedHat === id;
+              return (
+                <TouchableOpacity
+                  key={id}
+                  activeOpacity={0.85}
+                  style={[styles.itemCard, selected && styles.itemCardSelected]}
+                  onPress={() => handleSelectHat(id)}
+                >
+                  <Image source={HAT_IMAGES[id]} style={styles.cardHatImg} />
+                  <Text style={styles.cardTitle} numberOfLines={2}>
+                    {HAT_NAMES[id] ?? id}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        ) : (
+          <View style={styles.comingSoon}>
+            <Text style={styles.comingSoonText}>More styles coming soon.</Text>
+          </View>
+        )}
+
+        <View style={styles.buttonRow}>
+          <View style={styles.purchased}>
+            <Text style={styles.priceText}>{selectedHat ? "$ " + HAT_PRICE : "Select an item!"}</Text>
+          </View>
+          <TouchableOpacity
+            style={[
+              styles.purchase,
+              (!canAfford && !ownedHats[selectedHat ?? ""]) || purchasing
+                ? styles.purchaseDisabled
+                : null,
+            ]}
+            onPress={handlePurchase}
+            disabled={purchasing || (!ownedHats[selectedHat ?? ""] && !canAfford)}
+          >
+            {purchasing ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+          <Text style={styles.purchaseText}>
+            {equippedHat === selectedHat && selectedHat !== null
+              ? "Equipped"
+              : ownedHats[selectedHat ?? ""]
+              ? "Equip"
+              : purchasing
+              ? "..."
+              : canAfford
+              ? "Purchase"
+              : "Not enough"}
+          </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -235,49 +361,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    padding: 20,
   },
-  header: {
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 100,
+    paddingTop: 8,
+  },
+   header: {
+    marginHorizontal: 10,
+    marginTop: 8,
+    marginBottom: 10,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginHorizontal: 10,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "600",
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1a6b5a",
+    textAlign: "center",
+    marginTop: 4,
   },
-  tabScroll: {
-  flexDirection: "row",
-  marginTop: 11,
-},
-tabPill: {
-  paddingHorizontal: 14,
-  paddingVertical: 6,
-  borderRadius: 20,
-  backgroundColor: "#f4f4f0",
-  borderWidth: 1.5,
-  borderColor: "#e8e8e4",
-  marginRight: 8,
-},
-tabPillActive: {
-  backgroundColor: "#1a6b5a",
-  borderColor: "#1a6b5a",
-},
-tabPillText: {
-  fontSize: 13,
-  fontWeight: "600",
-  color: "#666",
-},
-tabPillTextActive: {
-  color: "#EAFBB1",
-},
   statsRow: {
     flexDirection: "row",
+    alignItems: "center",
   },
   statBox: {
     backgroundColor: "#EAFBB1",
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 10,
     marginLeft: 8,
@@ -286,77 +397,196 @@ tabPillTextActive: {
     fontWeight: "600",
     color: "#333",
   },
-  ringContainer: {
-    alignItems: "center",
-    marginVertical: 30,
-  },
-  barContainer: {
+  headerLeft: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    height: 140,
-    marginTop: 10,
-  },
-  barWrapper: {
-    width: 20,
     alignItems: "center",
+    gap: 10,
   },
-  bar: {
-    width: 18,
-    backgroundColor: "#6EF2B2",
-    borderRadius: 6,
+  headerAvatarWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    overflow: "hidden",
+    backgroundColor: "#F0F5F3",
   },
-  avgText: {
-    textAlign: "center",
-    marginTop: 10,
+  headerAvatar: {
+    width: 36,
+    height: 36,
+    resizeMode: "cover",
+  },
+  // title: {
+  //   fontSize: 24,
+  //   fontWeight: "700",
+  //   color: "#1a6b5a",
+  // },
+  // statsRow: {
+  //   flexDirection: "row",
+  //   alignItems: "center",
+  //   gap: 8,
+  // },
+  statCapsule: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#EAFBB1",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  // statText: {
+  //   fontWeight: "700",
+  //   color: "#333",
+  //   fontSize: 15,
+  // },
+  modeToggle: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 18,
+  },
+  modePill: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: "#F3F4F0",
+    borderWidth: 1.5,
+    borderColor: "#E5E6E0",
+  },
+  modePillActive: {
+    backgroundColor: "#FFF9DC",
+    borderColor: "#E8DCA8",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modePillText: {
+    fontSize: 15,
+    fontWeight: "700",
     color: "#666",
   },
-  practiceText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
+  modePillTextActive: {
+    color: "#1a6b5a",
   },
-  mainStore: {
-    //backgroundColor: "#c3bfbf",
-    justifyContent: "space-between",
+  previewFrame: {
+    borderWidth: 2,
+    borderColor: "#B8D9C8",
+    borderRadius: 28,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
     alignItems: "center",
-    marginVertical: 10,
-    marginHorizontal: 10,
-    gap: 7,
+    marginBottom: 18,
+    backgroundColor: "#FAFDFB",
   },
-  storeRow: {
+  previewAvatar: {
+    width: 220,
+    height: 220,
+    resizeMode: "contain",
+  },
+  equippedSlot: {
+    marginTop: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#ECEEEA",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#D8DCD6",
+  },
+  equippedHatThumb: {
+    width: 36,
+    height: 36,
+    resizeMode: "contain",
+  },
+  equippedPlaceholder: {
+    width: 28,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#D0D4CC",
+  },
+  categoryScroll: {
+    gap: 10,
+    paddingBottom: 14,
+    paddingRight: 8,
+  },
+  categoryPill: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    margin: 0,
-    gap: 5,
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 22,
+    backgroundColor: "#EEF0EC",
   },
-  itemButton: {
-    //backgroundColor: "#299564",
+  categoryPillActive: {
+    backgroundColor: "#1a6b5a",
+  },
+  categoryPillDisabled: {
+    opacity: 0.5,
+  },
+  categoryPillText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#555",
+  },
+  categoryPillTextActive: {
+    color: "#FFFFFF",
+  },
+  cardsRow: {
+    gap: 12,
+    paddingVertical: 4,
+    paddingRight: 8,
+  },
+  itemCard: {
+    width: 152,
+    backgroundColor: "#FFFCF3",
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: "#E8D78A",
+    paddingVertical: 14,
+    paddingHorizontal: 10,
     alignItems: "center",
-    margin: 0,
-    width: 80,
-    height: 80,
   },
-  hat_img: {
-    width: 90,
-    height: 90,
-    resizeMode: "contain",
+  itemCardSelected: {
+    borderColor: "#1a6b5a",
+    backgroundColor: "#F4FBF8",
   },
-  selected_hat: { //when hats have transparent background and want selection shadow
-    width: 90,
-    height: 90,
+  cardHatImg: {
+    width: 88,
+    height: 88,
     resizeMode: "contain",
-    shadowColor: "#76b9d3",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6, 
-    elevation: 8, //added for Android
+    marginBottom: 8,
   },
-  big_img: {
-    width: 250,
-    height: 250,
-    resizeMode: "contain",
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#2a2a2a",
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  cardSubtitle: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#666",
+    textAlign: "center",
+  },
+  cardSubtitleWearing: {
+    color: "#1a6b5a",
+    fontWeight: "700",
+  },
+  comingSoon: {
+    paddingVertical: 36,
+    alignItems: "center",
+  },
+  comingSoonText: {
+    fontSize: 15,
+    color: "#888",
+    fontWeight: "600",
   },
   purchase: {
     backgroundColor: "#299564",
@@ -394,10 +624,8 @@ tabPillTextActive: {
     fontWeight: "600",
     color: "#333",
   },
-   buttonRow: {
+  buttonRow: {
     flexDirection: "row",
-    //justifyContent: "space-between",
     alignItems: "center",
-    margin: 0,
   },
 });

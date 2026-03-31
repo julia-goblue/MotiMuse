@@ -105,7 +105,9 @@ const FirstTimer = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.pieceTitle}>Practice Timer</Text>
+      <Text style={styles.pieceTitle}>Practice to hatch Musey</Text>
+
+      <Image source={avatar} style={styles.avatar} />
 
       <View style={styles.timerBox}>
         <Text style={styles.timerText}>{formatTime()}</Text>
@@ -117,18 +119,7 @@ const FirstTimer = () => {
           <WaveBar key={i} delay={i} isPlaying={!paused}/>
         ))}
       </View>
-
-      <View style={styles.characterArea}>
-        <View style={styles.bubbleRight}>
-          <Text style={styles.bubbleTextDark}>You're sounding great!</Text>
-        </View>
-
-        <Image source={avatar} style={styles.avatar} />
-
-        {/* <View style={styles.bubbleLeft}>
-          <Text style={styles.bubbleTextLight}>Keep it up!</Text>
-        </View> */}
-      </View>
+      
 
       <View style={styles.buttonRow}>
         <Pressable style={styles.button} onPress={handlePause}>

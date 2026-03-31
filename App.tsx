@@ -18,6 +18,9 @@ import {
 import PostPractice from "./PostPractice";
 import PracticeIntro from "./PracticeIntro";
 import Egg from "./Egg";
+import FirstTimer from "./FirstTimer";
+import Streak from "./Streak";
+import avatar from "./avatar";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -104,8 +107,13 @@ export default function App() {
         <Stack.Screen name="PracticeMinutes" component={PracticeMinutesScreen} />
         <Stack.Screen name="MainTabs" component={MainTabs} />
         <Stack.Screen name="PracticeIntro" component={PracticeIntro} />
-         <Stack.Screen name="Timer" component={Timer} />
+        <Stack.Screen name="Timer" component={Timer} />
         <Stack.Screen name="PostPractice" component={PostPractice} />
+        <Stack.Screen name="Streak" component={Streak} />
+        <Stack.Screen name="Egg" component={Egg} />
+        <Stack.Screen name="FirstTimer" component={FirstTimer} />
+        <Stack.Screen name="avatar" component={avatar} />
+
       </Stack.Navigator>
     </NavigationContainer>
   );

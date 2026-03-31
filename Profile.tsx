@@ -10,14 +10,16 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import { getDatabase, ref, onValue, update } from "firebase/database";
 import { app } from "./firebaseConfig";
+import { CommonActions, useNavigation } from "@react-navigation/native";
 
 const auth = getAuth(app);
 const db = getDatabase(app);
 
 export default function Profile() {
+  const navigation = useNavigation<any>();
   const [name, setName] = useState("");
   const [goalMinutes, setGoalMinutes] = useState("");
   const [editingName, setEditingName] = useState(false);
@@ -25,6 +27,7 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [nameLoading, setNameLoading] = useState(true);
   const [uid, setUid] = useState<string | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   // Wait for Firebase Auth to resolve
   useEffect(() => {
@@ -92,6 +95,23 @@ export default function Profile() {
     setSaving(false);
   };
 
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await signOut(auth);
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: "Login" }],
+        })
+      );
+    } catch (e) {
+      console.error("Logout failed:", e);
+    }
+    setLoggingOut(false);
+  };
+
   if (nameLoading) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -107,9 +127,17 @@ export default function Profile() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={20}
       >
-        <Text style={styles.title}>Profile</Text>
+        <View style={styles.body}>
+          <Text style={styles.title}>Profile</Text>
 
-        <View style={styles.section}>
+          <Pressable
+            style={styles.tempStreakBtn}
+            onPress={() => navigation.navigate("Streak")}
+          >
+            <Text style={styles.tempStreakBtnText}>Temporary: open Streak screen</Text>
+          </Pressable>
+
+          <View style={styles.section}>
           <Text style={styles.label}>Name</Text>
           {editingName ? (
             <View style={styles.editRow}>
@@ -160,9 +188,20 @@ export default function Profile() {
           )}
         </View>
 
-        <Text style={styles.footer}>
-          Your daily goal is used for the practice ring on the dashboard.
-        </Text>
+          <Text style={styles.footer}>
+            Your daily goal is used for the practice ring on the dashboard.
+          </Text>
+
+          <Pressable
+            style={[styles.logoutBtn, loggingOut && styles.logoutBtnDisabled]}
+            onPress={handleLogout}
+            disabled={loggingOut}
+          >
+            <Text style={styles.logoutBtnText}>
+              {loggingOut ? "Logging out…" : "Log out"}
+            </Text>
+          </Pressable>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -178,6 +217,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 24,
   },
+  body: {
+    flex: 1,
+  },
   centered: {
     justifyContent: "center",
     alignItems: "center",
@@ -188,6 +230,22 @@ const styles = StyleSheet.create({
     color: "#1a6b5a",
     marginBottom: 32,
     textAlign: "center",
+  },
+  tempStreakBtn: {
+    backgroundColor: "#E8F4F1",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#40796E",
+    borderStyle: "dashed",
+    marginBottom: 24,
+  },
+  tempStreakBtnText: {
+    textAlign: "center",
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#40796E",
   },
   section: {
     marginBottom: 28,
@@ -253,5 +311,23 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 24,
     lineHeight: 20,
+  },
+  logoutBtn: {
+    marginTop: 28,
+    marginBottom: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#C45C5C",
+    alignItems: "center",
+    backgroundColor: "#FFF8F8",
+  },
+  logoutBtnDisabled: {
+    opacity: 0.6,
+  },
+  logoutBtnText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#B84444",
   },
 });
