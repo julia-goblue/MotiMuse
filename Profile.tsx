@@ -4,22 +4,18 @@ import {
   Text,
   TextInput,
   StyleSheet,
-  SafeAreaView,
   Pressable,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
 } from "react-native";
-import { getAuth } from "firebase/auth";
-import { getDoc, getDocFromCache, doc, updateDoc } from "firebase/firestore";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getDatabase, ref, onValue, update } from "firebase/database";
-import { app} from "./firebaseConfig";
-
+import { app } from "./firebaseConfig";
 
 const auth = getAuth(app);
-const user = auth.currentUser;
 const db = getDatabase(app);
-const userStatsRef = ref(db, `userStats/${user?.uid}`);
 
 export default function Profile() {
   const [name, setName] = useState("");
@@ -27,131 +23,76 @@ export default function Profile() {
   const [editingName, setEditingName] = useState(false);
   const [editingGoal, setEditingGoal] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [nameLoading, setNameLoading] = useState(true); // CHANGED: split loading state for name only
+  const [nameLoading, setNameLoading] = useState(true);
+  const [uid, setUid] = useState<string | null>(null);
 
-  // Load goal from RTDB (same source as dashboard)
+  // Wait for Firebase Auth to resolve
   useEffect(() => {
-
-
-    
-    const unsubscribe = onValue(userStatsRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        setGoalMinutes(String(data.dailyGoalMinutes ?? 20));
-        setName(String(data.dailyGoalMinutes ?? 20));
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUid(user.uid);
       } else {
-        setGoalMinutes("20");
-        setName("Elliot");
+        setUid(null);
+        setNameLoading(false);
       }
     });
     return () => unsubscribe();
   }, []);
 
-  // // Load name from Firestore (sign-up name at users/{uid}); use cache when offline
-  // useEffect(() => {
-  //   let cancelled = false;
-  //   const loadName = async () => {
-  //     const user = getAuth(app).currentUser;
-  //     if (!user) {
-  //       setNameLoading(false);
-  //       return;
-  //     }
-  //     try {
-  //       const userRef = doc(db, "users", user.uid);
-  //       let snap = null;
-  //       try {
-  //         snap = await getDocFromCache(userRef);
-  //       } catch {
-  //         try {
-  //           snap = await getDoc(userRef);
-  //         } catch {
-  //           // Offline and no cache; name stays empty
-  //         }
-  //       }
-  //       if (!cancelled && snap?.exists()) {
-  //         const data = snap.data();
-  //         setName(data?.name ?? "");
-  //       }
-  //     } catch (e) {
-  //       console.error("Failed to load name:", e);
-  //     } finally {
-  //       if (!cancelled) setLoading(false);
-  //     }
-  //   };
-  //   loadName();
-  //   return () => {
-  //     cancelled = true;
-  //   };
-  // }, []);
-
+  // Subscribe to RTDB only once uid is available
   useEffect(() => {
-  const db = getDatabase(app);
-  const userStatsRef = ref(db, "userStats/testUser1");
-  const unsubscribe = onValue(userStatsRef, (snapshot) => {
-    if (snapshot.exists()) {
-      const data = snapshot.val();
-      setName(data.name ?? "");
-    }
-    setNameLoading(false);
-  }, (e) => {
-    console.error("Failed to load name:", e);
-    setNameLoading(false);
-  });
-  return () => unsubscribe();
-}, []);
+    if (!uid) return;
 
-  // const handleSaveName = async () => {
-  //   const trimmed = name.trim();
-  //   setEditingName(false);
-  //   if (trimmed === "") return;
-  //   setSaving(true);
-  //   try {
-  //     const user = getAuth(app).currentUser;
-  //     if (user) {
-  //       await updateDoc(doc(db, "users", user.uid), { name: trimmed });
-  //     }
-  //   } catch (e) {
-  //     console.error("Failed to save name:", e);
-  //   }
-  //   setSaving(true);
-  // };
+    const userStatsRef = ref(db, `userStats/${uid}`);
+    const unsubscribe = onValue(
+      userStatsRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          setName(data.name ?? "");
+          setGoalMinutes(String(data.dailyGoalMinutes ?? 20));
+        } else {
+          setGoalMinutes("20");
+        }
+        setNameLoading(false);
+      },
+      (e) => {
+        console.error("Failed to load stats:", e);
+        setNameLoading(false);
+      }
+    );
+    return () => unsubscribe();
+  }, [uid]);
 
   const handleSaveName = async () => {
-      const trimmed = name.trim();
-      setEditingName(false);
-      if (trimmed === "") return;
-      setSaving(true);
-      try {
-        const db = getDatabase(app);
-        const userStatsRef = ref(db, "userStats/testUser1");
-        await update(userStatsRef, { name: trimmed });
-      } catch (e) {
-        console.error("Failed to save name:", e);
-      }
-  setSaving(false);
-};
+    const trimmed = name.trim();
+    setEditingName(false);
+    if (!trimmed || !uid) return;
+    setSaving(true);
+    try {
+      await update(ref(db, `userStats/${uid}`), { name: trimmed });
+    } catch (e) {
+      console.error("Failed to save name:", e);
+    }
+    setSaving(false);
+  };
 
   const handleSaveGoal = async () => {
     const num = parseInt(goalMinutes, 10);
-    if (isNaN(num) || num < 1 || num > 999) {
-      setGoalMinutes("20");
-    } else {
-      setGoalMinutes(String(num));
-    }
+    const value = isNaN(num) ? 20 : Math.min(999, Math.max(1, num));
+    setGoalMinutes(String(value));
     setEditingGoal(false);
+    if (!uid) return;
     setSaving(true);
     try {
-      const rtdb = getDatabase(app);
-      const value = Math.min(999, Math.max(1, parseInt(goalMinutes, 10) || 20));
-      await update(userStatsRef, { dailyGoalMinutes: value });
+      await update(ref(db, `userStats/${uid}`), { dailyGoalMinutes: value });
     } catch (e) {
       console.error("Failed to save goal:", e);
     }
     setSaving(false);
   };
 
-  if (loading) {
+  if (nameLoading) {
     return (
       <View style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color="#1a6b5a" />
@@ -170,11 +111,7 @@ export default function Profile() {
 
         <View style={styles.section}>
           <Text style={styles.label}>Name</Text>
-          {nameLoading ? ( // Firestore still fetching — show a placeholder in just the name field
-            <View style={styles.valueRow}>
-              <Text style={[styles.value, { color: "#7AAEA3" }]}>Loading…</Text>
-            </View>
-            ) :editingName ? (
+          {editingName ? (
             <View style={styles.editRow}>
               <TextInput
                 style={styles.input}
@@ -190,13 +127,8 @@ export default function Profile() {
               </Pressable>
             </View>
           ) : (
-            <Pressable
-              style={styles.valueRow}
-              onPress={() => setEditingName(true)}
-            >
-              <Text style={styles.value}>
-                {name.trim() || "Tap to add name"}
-              </Text>
+            <Pressable style={styles.valueRow} onPress={() => setEditingName(true)}>
+              <Text style={styles.value}>{name.trim() || "Tap to add name"}</Text>
               <Text style={styles.editHint}>Edit</Text>
             </Pressable>
           )}
@@ -221,10 +153,7 @@ export default function Profile() {
               </Pressable>
             </View>
           ) : (
-            <Pressable
-              style={styles.valueRow}
-              onPress={() => setEditingGoal(true)}
-            >
+            <Pressable style={styles.valueRow} onPress={() => setEditingGoal(true)}>
               <Text style={styles.value}>{goalMinutes} min</Text>
               <Text style={styles.editHint}>Edit</Text>
             </Pressable>

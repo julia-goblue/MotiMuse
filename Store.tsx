@@ -4,24 +4,18 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  ScrollView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { getDatabase, ref, onValue, runTransaction } from "firebase/database";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { app } from "./firebaseConfig";
-import {getAuth} from "firebase/auth";
 
 const HAT_PRICE = 15;
 const auth = getAuth(app);
-const user = auth.currentUser;
 const db = getDatabase(app);
-
-
-// const USER_STATS_PATH = `userStats/${user?.uid}`;
-// const USER_STATS_PATH = "userStats/testUser1";
 
 export function getChosenAvatar(selectedHat: string | null) {
   const avatars: Record<string, any> = {
@@ -54,18 +48,22 @@ export default function Store() {
   const [equippedHat, setEquippedHat] = useState<string | null>(null);
   const [ownedHats, setOwnedHats] = useState<Record<string, boolean>>({});
   const [activeTab, setActiveTab] = useState("Hats");
+  const [uid, setUid] = useState<string | null>(null);
 
-
+  // Wait for Firebase Auth to resolve
   useEffect(() => {
-    // const rtdb = getDatabase(app);
-    // const userStatsRef = ref(rtdb, USER_STATS_PATH);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) setUid(user.uid);
+      else setUid(null);
+    });
+    return () => unsubscribe();
+  }, []);
 
-    const userStatsRef = ref(db, `userStats/${user?.uid}`);
+  // Subscribe to RTDB only once uid is available
+  useEffect(() => {
+    if (!uid) return;
 
-    // const auth = getAuth(app);
-    // const user = auth.currentUser;
-    // const db = getDatabase(app);
-    // const userStatsRef = ref(db, `userStats/${user?.uid}`);
+    const userStatsRef = ref(db, `userStats/${uid}`);
     const unsubscribe = onValue(userStatsRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
@@ -79,64 +77,59 @@ export default function Store() {
       }
     });
     return () => unsubscribe();
-  }, []);
-
+  }, [uid]);
 
   const handleSelectHat = (hatId: string) => {
     setSelectedHat(hatId);
   };
 
-const handlePurchase = async () => {
-  if (!selectedHat) return;
+  const handlePurchase = async () => {
+    if (!selectedHat || !uid) return;
 
-  if (ownedHats[selectedHat]) {
-    try {
-      // const rtdb = getDatabase(app);
-      // const userStatsRef = ref(rtdb, USER_STATS_PATH);
-
-      const userStatsRef = ref(db, `userStats/${user?.uid}`);
-      await runTransaction(userStatsRef, (current) => {
-        if (!current) return current;
-        return { ...current, equippedHat: selectedHat };
-      });
-      setSelectedHat(null);
-    } catch (e) {
-      Alert.alert("Failed to equip", "Something went wrong.");
-    }
-    return;
-  }
-
-  if (earnings < HAT_PRICE) {
-    Alert.alert("Not enough", `You need ${HAT_PRICE} to buy this item.`);
-    return;
-  }
-  setPurchasing(true);
-  try {
-    const userStatsRef = ref(db, `userStats/${user?.uid}`);
-    await runTransaction(userStatsRef, (current) => {
-      if (!current) {
-        current = { currentEarnings: 0, totalStars: 0 };
+    if (ownedHats[selectedHat]) {
+      try {
+        const userStatsRef = ref(db, `userStats/${uid}`);
+        await runTransaction(userStatsRef, (current) => {
+          if (!current) return current;
+          return { ...current, equippedHat: selectedHat };
+        });
+        setSelectedHat(null);
+      } catch (e) {
+        Alert.alert("Failed to equip", "Something went wrong.");
       }
-      const currentEarnings = current.currentEarnings ?? 0;
-      if (currentEarnings < HAT_PRICE) return current;
-      return {
-        ...current,
-        currentEarnings: currentEarnings - HAT_PRICE,
-        ownedHats: { ...(current.ownedHats || {}), [selectedHat]: true },
-        equippedHat: selectedHat,
-      };
-    });
-    setSelectedHat(equippedHat);
-  } catch (e) {
-    console.error("Purchase failed:", e);
-    Alert.alert("Purchase failed", "Something went wrong. Try again.");
-  } finally {
-    setPurchasing(false);
-  }
-};
+      return;
+    }
+
+    if (earnings < HAT_PRICE) {
+      Alert.alert("Not enough", `You need ${HAT_PRICE} to buy this item.`);
+      return;
+    }
+    setPurchasing(true);
+    try {
+      const userStatsRef = ref(db, `userStats/${uid}`);
+      await runTransaction(userStatsRef, (current) => {
+        if (!current) {
+          current = { currentEarnings: 0, totalStars: 0 };
+        }
+        const currentEarnings = current.currentEarnings ?? 0;
+        if (currentEarnings < HAT_PRICE) return current;
+        return {
+          ...current,
+          currentEarnings: currentEarnings - HAT_PRICE,
+          ownedHats: { ...(current.ownedHats || {}), [selectedHat]: true },
+          equippedHat: selectedHat,
+        };
+      });
+      setSelectedHat(equippedHat);
+    } catch (e) {
+      console.error("Purchase failed:", e);
+      Alert.alert("Purchase failed", "Something went wrong. Try again.");
+    } finally {
+      setPurchasing(false);
+    }
+  };
 
   const canAfford = earnings >= HAT_PRICE;
-  //const chosenAvatar = !selectedHat ? "./assets/Avatar 1.png" : "./assets/${selectedHat}_guy.png";
 
   return (
     <SafeAreaView style={styles.container}>
@@ -153,109 +146,86 @@ const handlePurchase = async () => {
         </View>
       </View>
 
-      {/* <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll}>
-      {["Hats", "Items", "Outfits", "Badges", "Themes"].map(tab => (
-        <TouchableOpacity
-          key={tab}
-          style={[styles.tabPill, activeTab === tab && styles.tabPillActive]}
-          onPress={() => setActiveTab(tab)}
-        >
-          <Text style={[styles.tabPillText, activeTab === tab && styles.tabPillTextActive]}>
-            {tab}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView> */}
       {/* Big Avatar */}
       <View style={styles.ringContainer}>
-  <Image source={getChosenAvatar(!selectedHat ? equippedHat : selectedHat)} style={styles.big_img} />
-</View>
+        <Image
+          source={getChosenAvatar(!selectedHat ? equippedHat : selectedHat)}
+          style={styles.big_img}
+        />
+      </View>
 
       {/* Store Block */}
       <View style={styles.mainStore}>
         <View style={styles.storeRow}>
-          {/* Row of color variants */}
           <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("OB")}>
-            <Image source={require("./assets/OB_hat.png")}
-              style={[ styles.hat_img, selectedHat === "OB" && styles.selected_hat ]} />
+            <Image source={require("./assets/OB_hat.png")} style={[styles.hat_img, selectedHat === "OB" && styles.selected_hat]} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("BB")}>
-            <Image source={require("./assets/BB_hat.png")}
-              style={[ styles.hat_img, selectedHat === "BB" && styles.selected_hat ]} />
+            <Image source={require("./assets/BB_hat.png")} style={[styles.hat_img, selectedHat === "BB" && styles.selected_hat]} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("GB")}>
-            <Image source={require("./assets/GB_hat.png")}
-              style={[ styles.hat_img, selectedHat === "GB" && styles.selected_hat ]} />
+            <Image source={require("./assets/GB_hat.png")} style={[styles.hat_img, selectedHat === "GB" && styles.selected_hat]} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("PB")}>
-            <Image source={require("./assets/PB_hat.png")}
-              style={[ styles.hat_img, selectedHat === "PB" && styles.selected_hat ]} />
+            <Image source={require("./assets/PB_hat.png")} style={[styles.hat_img, selectedHat === "PB" && styles.selected_hat]} />
           </TouchableOpacity>
         </View>
         <View style={styles.storeRow}>
-          {/* Row of color variants */}
           <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("OG")}>
-            <Image source={require("./assets/OG_hat.png")}
-              style={[ styles.hat_img, selectedHat === "OG" && styles.selected_hat ]} />
+            <Image source={require("./assets/OG_hat.png")} style={[styles.hat_img, selectedHat === "OG" && styles.selected_hat]} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("BG")}>
-            <Image source={require("./assets/BG_hat.png")}
-              style={[ styles.hat_img, selectedHat === "BG" && styles.selected_hat ]} />
+            <Image source={require("./assets/BG_hat.png")} style={[styles.hat_img, selectedHat === "BG" && styles.selected_hat]} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("GG")}>
-            <Image source={require("./assets/GG_hat.png")}
-              style={[ styles.hat_img, selectedHat === "GG" && styles.selected_hat ]} />
+            <Image source={require("./assets/GG_hat.png")} style={[styles.hat_img, selectedHat === "GG" && styles.selected_hat]} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("PG")}>
-            <Image source={require("./assets/PG_hat.png")}
-              style={[ styles.hat_img, selectedHat === "PG" && styles.selected_hat ]} />
+            <Image source={require("./assets/PG_hat.png")} style={[styles.hat_img, selectedHat === "PG" && styles.selected_hat]} />
           </TouchableOpacity>
         </View>
         <View style={styles.storeRow}>
-          {/* Row of color variants */}
           <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("OC")}>
-            <Image source={require("./assets/OC_hat.png")}
-              style={[ styles.hat_img, selectedHat === "OC" && styles.selected_hat ]} />
+            <Image source={require("./assets/OC_hat.png")} style={[styles.hat_img, selectedHat === "OC" && styles.selected_hat]} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("BC")}>
-            <Image source={require("./assets/BC_hat.png")}
-              style={[ styles.hat_img, selectedHat === "BC" && styles.selected_hat ]} />
+            <Image source={require("./assets/BC_hat.png")} style={[styles.hat_img, selectedHat === "BC" && styles.selected_hat]} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("GC")}>
-            <Image source={require("./assets/GC_hat.png")}
-              style={[ styles.hat_img, selectedHat === "GC" && styles.selected_hat ]} />
+            <Image source={require("./assets/GC_hat.png")} style={[styles.hat_img, selectedHat === "GC" && styles.selected_hat]} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.itemButton} onPress={() => handleSelectHat("PC")}>
-            <Image source={require("./assets/PC_hat.png")}
-              style={[ styles.hat_img, selectedHat === "PC" && styles.selected_hat ]} />
+            <Image source={require("./assets/PC_hat.png")} style={[styles.hat_img, selectedHat === "PC" && styles.selected_hat]} />
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.buttonRow}>
-        {(
-          <View style={styles.purchased}>
-            <Text style={styles.priceText}>{selectedHat ? "$ " + HAT_PRICE : "Select an item!"}</Text>
-          </View>
-        )}
-        {(
-          <TouchableOpacity
+        <View style={styles.purchased}>
+          <Text style={styles.priceText}>{selectedHat ? "$ " + HAT_PRICE : "Select an item!"}</Text>
+        </View>
+        <TouchableOpacity
           style={[
             styles.purchase,
             (!canAfford && !ownedHats[selectedHat ?? ""] || purchasing) && styles.purchaseDisabled,
           ]}
-            onPress={handlePurchase}
-            disabled={purchasing || (!ownedHats[selectedHat ?? ""] && !canAfford)}
-          >
-            {purchasing ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-        <Text style={styles.purchaseText}>
-          {ownedHats[equippedHat ?? ""] ? "Equipped" :(ownedHats[selectedHat ?? ""] ? "Equip" : (canAfford ? "Purchase" : "Not enough"))}
-        </Text>
-            )}
-          </TouchableOpacity>
-        )}
+          onPress={handlePurchase}
+          disabled={purchasing || (!ownedHats[selectedHat ?? ""] && !canAfford)}
+        >
+          {purchasing ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.purchaseText}>
+              {ownedHats[equippedHat ?? ""]
+                ? "Equipped"
+                : ownedHats[selectedHat ?? ""]
+                ? "Equip"
+                : canAfford
+                ? "Purchase"
+                : "Not enough"}
+            </Text>
+          )}
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
