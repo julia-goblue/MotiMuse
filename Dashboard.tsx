@@ -211,12 +211,12 @@ export default function Dashboard() {
 
       {/* Practice Button – opens intro then Timer */}
 
-      <Pressable
+      {/* <Pressable
         onPress={() => navigation.navigate("Egg")}
         style={styles.practiceButton}
       >
         <Text style={styles.practiceText}>Egg!</Text>
-      </Pressable>
+      </Pressable> */}
       <Pressable
         onPress={() => navigation.navigate("PracticeIntro")}
         style={styles.practiceButton}

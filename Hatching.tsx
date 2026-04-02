@@ -10,9 +10,9 @@ import {getChosenAvatar} from "./Store"
 
 export function getMuseyColor(museyColor: string | null) {
   const avatars: Record<string, any> = {
-    P: require("./assets/p_egg.png"),
-    B: require("./assets/b_egg.png"),
-    G: require("./assets/g_egg.png"),
+    P: require("./assets/p_avatar.png"),
+    B: require("./assets/b_avatar.png"),
+    G: require("./assets/g_avatar.png"),
   };
 
   if (!museyColor) {
