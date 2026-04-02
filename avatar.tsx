@@ -7,38 +7,17 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 import { getDatabase, ref, onValue, runTransaction } from "firebase/database";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { app } from "./firebaseConfig";
+import {getChosenAvatar} from "./Store"
 
-const HAT_PRICE = 15;
 const auth = getAuth(app);
 const db = getDatabase(app);
-
-export function getChosenAvatar(selectedHat: string | null) {
-  const avatars: Record<string, any> = {
-    OB: require("./assets/OB_guy.png"),
-    BB: require("./assets/BB_guy.png"),
-    GB: require("./assets/GB_guy.png"),
-    PB: require("./assets/PB_guy.png"),
-    OG: require("./assets/OG_guy.png"),
-    BG: require("./assets/BG_guy.png"),
-    GG: require("./assets/GG_guy.png"),
-    PG: require("./assets/PG_guy.png"),
-    OC: require("./assets/OC_guy.png"),
-    BC: require("./assets/BC_guy.png"),
-    GC: require("./assets/GC_guy.png"),
-    PC: require("./assets/PC_guy.png"),
-  };
-
-  if (!selectedHat) {
-    return require("./assets/Avatar 1.png");
-  }
-
-  return avatars[selectedHat];
-}
 
 export default function avatar() {
   const [selectedHat, setSelectedHat] = useState<string | null>(null);
@@ -79,57 +58,7 @@ export default function avatar() {
     return () => unsubscribe();
   }, [uid]);
 
-  const handleSelectHat = (hatId: string) => {
-    setSelectedHat(hatId);
-  };
-
-  const handlePurchase = async () => {
-    if (!selectedHat || !uid) return;
-
-    if (ownedHats[selectedHat]) {
-      try {
-        const userStatsRef = ref(db, `userStats/${uid}`);
-        await runTransaction(userStatsRef, (current) => {
-          if (!current) return current;
-          return { ...current, equippedHat: selectedHat };
-        });
-        setSelectedHat(null);
-      } catch (e) {
-        Alert.alert("Failed to equip", "Something went wrong.");
-      }
-      return;
-    }
-
-    if (earnings < HAT_PRICE) {
-      Alert.alert("Not enough", `You need ${HAT_PRICE} to buy this item.`);
-      return;
-    }
-    setPurchasing(true);
-    try {
-      const userStatsRef = ref(db, `userStats/${uid}`);
-      await runTransaction(userStatsRef, (current) => {
-        if (!current) {
-          current = { currentEarnings: 0, totalStars: 0 };
-        }
-        const currentEarnings = current.currentEarnings ?? 0;
-        if (currentEarnings < HAT_PRICE) return current;
-        return {
-          ...current,
-          currentEarnings: currentEarnings - HAT_PRICE,
-          ownedHats: { ...(current.ownedHats || {}), [selectedHat]: true },
-          equippedHat: selectedHat,
-        };
-      });
-      setSelectedHat(equippedHat);
-    } catch (e) {
-      console.error("Purchase failed:", e);
-      Alert.alert("Purchase failed", "Something went wrong. Try again.");
-    } finally {
-      setPurchasing(false);
-    }
-  };
-
-  const canAfford = earnings >= HAT_PRICE;
+  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -149,10 +78,14 @@ export default function avatar() {
       {/* Big Avatar */}
       <View style={styles.ringContainer}>
         <Image
-          source={getChosenAvatar(!selectedHat ? equippedHat : selectedHat)}
+          source={getChosenAvatar(equippedHat)}
           style={styles.big_img}
         />
       </View>
+
+      <Pressable style={styles.button} onPress={() => navigation.navigate("Dashboard")}>
+          <Text style={styles.buttonText}>{"Leave"}</Text>
+        </Pressable>
     </SafeAreaView>
   );
 }
@@ -264,46 +197,21 @@ const styles = StyleSheet.create({
     height: 250,
     resizeMode: "contain",
   },
-  purchase: {
-    backgroundColor: "#299564",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    marginLeft: 8,
-    width: 175,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  purchaseDisabled: {
-    backgroundColor: "#999",
-    opacity: 0.8,
-  },
-  purchaseText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  purchased: {
-    backgroundColor: "#EAFBB1",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    margin: 8,
-    width: 175,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  priceText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-  },
-   buttonRow: {
+  buttonRow: {
     flexDirection: "row",
-    //justifyContent: "space-between",
-    alignItems: "center",
-    margin: 0,
+    gap: 20,
+    marginTop: 24,
+  },
+  button: {
+    backgroundColor: "#EAFBB1",
+    // marginTop: 100,
+    paddingHorizontal: 40,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1a3a33",
   },
 });

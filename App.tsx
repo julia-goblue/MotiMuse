@@ -21,6 +21,7 @@ import Egg from "./Egg";
 import FirstTimer from "./FirstTimer";
 import Streak from "./Streak";
 import avatar from "./avatar";
+import Hatching from "./Hatching";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -113,6 +114,7 @@ export default function App() {
         <Stack.Screen name="Egg" component={Egg} />
         <Stack.Screen name="FirstTimer" component={FirstTimer} />
         <Stack.Screen name="avatar" component={avatar} />
+        <Stack.Screen name="Hatching" component={Hatching} />
 
       </Stack.Navigator>
     </NavigationContainer>

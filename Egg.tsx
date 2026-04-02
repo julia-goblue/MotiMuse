@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { getDatabase, ref, onValue } from "firebase/database";
+import { getDatabase, ref, onValue, set } from "firebase/database";
 import { db, app } from "./firebaseConfig";
 import {getChosenAvatar} from "./Store"
 import { getAuth } from "firebase/auth";
@@ -18,7 +18,7 @@ import { getAuth } from "firebase/auth";
 const TEAL = "#1a6b5a";
 const LIGHT_YELLOW = "#EAFBB1";
 
-export function getChosenEgg(selectedHat: string | null) {
+export function getChosenEgg(museyColor: string | null) {
   const eggs: Record<string, any> = {
     P: require("./assets/p_egg.png"),
     B: require("./assets/b_egg.png"),
@@ -49,6 +49,9 @@ export default function Egg() {
       if (snapshot.exists()) { // Check if data exists at the path
         const data = snapshot.val();
         console.log("Fetched data:", data); 
+        if (data.museyColor) {
+          setMuseyColor(data.museyColor); // restore previously chosen color
+        }
 
       } 
     }, (databaseError) => {
@@ -64,6 +67,11 @@ export default function Egg() {
 
   const handleMuseyColor = (eggColor: string) => {
     setMuseyColor(eggColor);
+
+    const auth = getAuth(app);
+    const user = auth.currentUser;
+    const db = getDatabase(app);
+    set(ref(db, `userStats/${user?.uid}/museyColor`), eggColor);
   };
 
    //const avatar = getChosenAvatar(equippedHat);

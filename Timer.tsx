@@ -120,7 +120,7 @@ const Timer = () => {
 
       <View style={styles.characterArea}>
         <View style={styles.bubbleRight}>
-          <Text style={styles.bubbleTextDark}>You're sounding great!</Text>
+          <Text style={styles.bubbleTextDark}>{paused ? "Musey misses your music" : "You're sounding great!"}</Text>
         </View>
 
         <Image source={avatar} style={styles.avatar} />

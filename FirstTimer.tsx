@@ -3,7 +3,7 @@ import { Image, View, Text, StyleSheet, Pressable, Animated } from "react-native
 import { useNavigation } from "@react-navigation/native";
 import { getDatabase, ref, onValue } from "firebase/database";
 import { app } from "./firebaseConfig";
-import { getChosenAvatar } from "./Store";
+import { getChosenEgg } from "./Egg";
 import { getAuth } from "firebase/auth";
 
 const WaveBar = ({ delay, isPlaying }: { delay: number; isPlaying: boolean }) => {
@@ -54,7 +54,7 @@ const FirstTimer = () => {
   const [seconds, setSeconds] = useState(300);
   const [paused, setPaused] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const [equippedHat, setEquippedHat] = useState<string | null>(null);
+  const [museyColor, setMuseyColor] = useState<string | null>(null);
 
   useEffect(() => {
     // const db = getDatabase(app);
@@ -67,7 +67,7 @@ const FirstTimer = () => {
     const unsubscribe = onValue(userStatsRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
-        setEquippedHat(data.equippedHat ?? null);
+        setMuseyColor(data.museyColor ?? null);
       }
     });
     return () => unsubscribe();
@@ -95,13 +95,15 @@ const FirstTimer = () => {
     else { if (intervalRef.current) clearInterval(intervalRef.current); setPaused(true);}
   };
 
-  const handleEndPractice = () => {
+  const handleEndPractice = () => { //TODO This needs to change, so they don't end till Musey is hatched
     if (intervalRef.current) clearInterval(intervalRef.current);
-    navigation.navigate("PostPractice", { seconds });
-  };
+    navigation.navigate("Hatching");
+  };//TODO handle end practice only when 5min is up
 
-  const avatar = getChosenAvatar(equippedHat);//TODO getChosenEgg
+  const avatar = getChosenEgg(museyColor);//TODO getChosenEgg
   const barHeights = [0.5, 0.8, 1, 0.6, 0.9, 0.7, 1, 0.5, 0.8, 0.6, 1, 0.7, 0.9, 0.5, 0.8];
+
+  if(seconds == 0) handleEndPractice();
 
   return (
     <View style={styles.container}>
@@ -125,9 +127,9 @@ const FirstTimer = () => {
         <Pressable style={styles.button} onPress={handlePause}>
           <Text style={styles.buttonText}>{paused ? "Resume" : "Pause"}</Text>
         </Pressable>
-        <Pressable style={styles.button} onPress={handleEndPractice}>
+        {/* <Pressable style={styles.button} onPress={handleEndPractice}>
           <Text style={styles.buttonText}>End</Text>
-        </Pressable>
+        </Pressable> */}
       </View>
     </View>
   );
