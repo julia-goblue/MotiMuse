@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, Image, Pressable, StyleSheet } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 // import { getFirestore, doc, updateDoc, increment } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 // import { getDatabase, ref, runTransaction } from "firebase/database";
-import { getDatabase, ref, update, increment, onValue, runTransaction } from 'firebase/database';
+import { getDatabase, ref, onValue, runTransaction } from "firebase/database";
 import { app } from "./firebaseConfig";
-import {getChosenAvatar} from "./Store"
+import { applyPracticeSession } from "./practiceSession";
 
 export function getMuseyColor(museyColor: string | null) {
   const avatars: Record<string, any> = {
@@ -16,7 +16,7 @@ export function getMuseyColor(museyColor: string | null) {
   };
 
   if (!museyColor) {
-    return require("./assets/g_egg.png");
+    return require("./assets/g_avatar.png");
   }
 
   return avatars[museyColor];
@@ -28,6 +28,10 @@ const Hatching = () => {
   const { seconds = 0 } = route.params ?? {};
   const minutesPracticed = 5;
   const [museyColor, setMuseyColor] = useState<string | null>(null);
+  const [practiceSaveState, setPracticeSaveState] = useState<
+    "idle" | "saving" | "done" | "error"
+  >("idle");
+  const [firstPracticeOfDay, setFirstPracticeOfDay] = useState(false);
   
      useEffect(() => {
     
@@ -67,61 +71,75 @@ const Hatching = () => {
     
   const avatar = getMuseyColor(museyColor);
 
+  const formatTime = () => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins === 0) return `${secs}s`;
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  };
 
-  // Save minutes + rewards to Firestore and Realtime DB (dashboard/shop + weekly chart)
+  const savePractice = useCallback(async () => {
+    setPracticeSaveState("saving");
+    const earnedDollars = 50;
+    const earnedStars = 1;
+
+    try {
+      const auth = getAuth(app);
+      const user = auth.currentUser;
+
+      const rtdb = getDatabase(app);
+      const userStatsRef = ref(rtdb, `userStats/${user?.uid}`);
+
+      let firstToday = false;
+      await runTransaction(userStatsRef, (current) => {
+        const { next, firstPracticeOfCalendarDay } = applyPracticeSession(
+          current as Record<string, unknown> | null,
+          {
+            minutesPracticed,
+            secondsPracticed: seconds,
+            earnedDollars,
+            earnedStars,
+            now: new Date(),
+          }
+        );
+        firstToday = firstPracticeOfCalendarDay;
+        return next;
+      });
+      setFirstPracticeOfDay(firstToday);
+      setPracticeSaveState("done");
+    } catch (err) {
+      console.error("Failed to save practice:", err);
+      setPracticeSaveState("error");
+    }
+  }, [minutesPracticed, seconds]);
+
   useEffect(() => {
-    const savePractice = async () => {
-      // used to be * 0.8 but for testing * 3
-      const earnedDollars = 50;
-      const earnedStars = 1;
-
-      try {
-        const auth = getAuth(app);
-        const user = auth.currentUser;
-
-        const rtdb = getDatabase(app);
-        const userStatsRef = ref(rtdb, `userStats/${user?.uid}`);
-        const dayIndex = (new Date().getDay() + 6) % 7; // Mon=0 .. Sun=6
-        const key = String(dayIndex);
-
-        await runTransaction(userStatsRef, (current) => {
-          const next = current != null ? { ...current } : {};
-          next.minutesPracticedToday = (next.minutesPracticedToday ?? 0) + minutesPracticed;
-          next.currentEarnings = (next.currentEarnings ?? 0) + earnedDollars;
-          next.totalStars = (next.totalStars ?? 0) + earnedStars;
-
-          const prevWeek = next.weeklyMinutes && typeof next.weeklyMinutes === "object"
-            ? { ...next.weeklyMinutes }
-            : { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0 };
-          next.weeklyMinutes = { ...prevWeek, [key]: (prevWeek[key] ?? 0) + minutesPracticed };
-
-          return next;
-        });
-      } catch (err) {
-        console.error("Failed to save practice:", err);
-      }
-    };
-
     savePractice();
-  }, [minutesPracticed]);
+  }, [savePractice]);
 
-  const handleClaimRewards = () => {
-    navigation.navigate("MainTabs");
+  const handlePrimaryPress = () => {
+    if (practiceSaveState === "error") {
+      savePractice();
+      return;
+    }
+    if (practiceSaveState !== "done") return;
+    if (firstPracticeOfDay) {
+      navigation.navigate("Streak");
+    } else {
+      navigation.navigate("MainTabs");
+    }
   };
 
   return (
     <View style={styles.container}>
-      <Image
-        source={avatar}
-        style={styles.avatar}
-      />
+      <Image source={avatar} style={styles.avatarImg} />
 
       <View style={styles.timerBox}>
         <Text style={styles.timerText}>{formatTime()}</Text>
       </View>
       {/* <Text style={styles.minutesLabel}>minutes played</Text> */}
       <Text style={styles.minutesLabel}>
-        {Math.floor(300 / 60) === 0 ? "seconds played" : "minutes played"}
+        {Math.floor(seconds / 60) === 0 ? "seconds played" : "minutes played"}
       </Text>
 
       <Text style={styles.message}>
@@ -137,8 +155,21 @@ const Hatching = () => {
         </View>
       </View>
 
-      <Pressable style={styles.claimButton} onPress={handleClaimRewards}>
-        <Text style={styles.claimText}>Claim Rewards</Text>
+      <Pressable
+        style={[
+          styles.claimButton,
+          practiceSaveState === "saving" && styles.claimButtonDisabled,
+        ]}
+        onPress={handlePrimaryPress}
+        disabled={practiceSaveState === "saving"}
+      >
+        <Text style={styles.claimText}>
+          {practiceSaveState === "saving"
+            ? "Saving…"
+            : practiceSaveState === "error"
+            ? "Try again"
+            : "Claim Rewards"}
+        </Text>
       </Pressable>
     </View>
   );
@@ -154,17 +185,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 36,
   },
-  avatar: {
-    width: 200,
-    height: 200,
+  avatarImg: {
+    width: 250,
+    height: 250,
     marginBottom: 24,
+    resizeMode: "contain",
   },
   timerBox: {
     backgroundColor: "#1a6b5a",
     paddingHorizontal: 28,
     paddingVertical: 12,
     borderRadius: 12,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   timerText: {
     color: "#EAFBB1",
@@ -207,6 +239,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 60,
     borderRadius: 14,
     marginTop: 8,
+  },
+  claimButtonDisabled: {
+    opacity: 0.55,
   },
   claimText: {
     fontSize: 16,

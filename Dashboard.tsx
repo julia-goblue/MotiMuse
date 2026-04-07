@@ -13,7 +13,12 @@ import { getAuth, initializeAuth } from "firebase/auth";
 import { db, app } from "./firebaseConfig";
 import { useNavigation } from "@react-navigation/native";
 import ProgressRing from "./ProgressRing";
-import {getChosenAvatar} from "./Store"
+import { getChosenAvatar } from "./Store";
+import {
+  effectiveMinutesPracticedToday,
+  effectiveSecondsPracticedToday,
+  mondayYMDLocal,
+} from "./practiceSession";
 
 export default function Dashboard() {
   const navigation = useNavigation<any>();
@@ -24,6 +29,11 @@ export default function Dashboard() {
   const [secondsPracticedToday, setSeconds] = useState(0);
   const [dailyGoalMinutes, setDailyGoalMinutes] = useState(20);
   const [weekData, setWeekData] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
+  const [weeklyPracticeTotal, setWeeklyPracticeTotal] = useState(0);
+  const [weeklySessionCount, setWeeklySessionCount] = useState(0);
+  const [practiceWeekStart, setPracticeWeekStart] = useState<string | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<null | string>(null);
   const [equippedHat, setEquippedHat] = useState<string | null>(null);
@@ -66,8 +76,8 @@ export default function Dashboard() {
         //    Ensure the keys ('currentEarnings', 'totalStars') match your database structure.
         setEarnings(data.currentEarnings || 0);
         setStars(data.totalStars || 0);
-        setMinutes(data.minutesPracticedToday || 0);
-        setSeconds(data.secondsPracticedToday || 0);
+        setMinutes(effectiveMinutesPracticedToday(data, new Date()));
+        setSeconds(effectiveSecondsPracticedToday(data, new Date()));
         setDailyGoalMinutes(data.dailyGoalMinutes || 20);
         setEquippedHat(data.equippedHat ?? null);
        const raw = data.weeklyMinutes;
@@ -83,6 +93,9 @@ export default function Dashboard() {
         } else {
           setWeekData([0, 0, 0, 0, 0, 0, 0]);
         }
+        setPracticeWeekStart(data.practiceWeekStart ?? null);
+        setWeeklyPracticeTotal(data.weeklyPracticeTotal ?? 0);
+        setWeeklySessionCount(data.weeklySessionCount ?? 0);
         setLoading(false);
       } else {
         setEarnings(0);
@@ -90,6 +103,9 @@ export default function Dashboard() {
         setMinutes(0);
         setDailyGoalMinutes(20);
         setWeekData([0, 0, 0, 0, 0, 0, 0]);
+        setPracticeWeekStart(null);
+        setWeeklyPracticeTotal(0);
+        setWeeklySessionCount(0);
         setLoading(false);
       }
     }, (databaseError) => {
@@ -108,18 +124,20 @@ export default function Dashboard() {
     };
   }, []);
 
-  const totalWeekMinutes = weekData.reduce((a, b) => a + b, 0);
-  const daysWithPractice = weekData.filter((m) => m > 0).length;
+  const now = new Date();
+  const thisWeekMonday = mondayYMDLocal(now);
+  const statsMatchThisWeek = practiceWeekStart === thisWeekMonday;
   const avgSessionMinutes =
-    daysWithPractice > 0 ? Math.round(totalWeekMinutes / daysWithPractice) : 0;
+    statsMatchThisWeek && weeklySessionCount > 0
+      ? Math.round(weeklyPracticeTotal / weeklySessionCount)
+      : 0;
   const maxBar = Math.max(dailyGoalMinutes, ...weekData);
 
   const CHART_BAR_WIDTH = 40;
   const CHART_GAP = 4;
   const CHART_TOTAL_WIDTH = 7 * CHART_BAR_WIDTH + 6 * CHART_GAP;
 
-  // Current week dates (Sun–Sat) for label row: get Monday first, then +0..6
-  const now = new Date();
+  // Current week dates (Mon–Sun) for label row: get Monday first, then +0..6
   const dayOfWeek = now.getDay();
   const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
   const weekDates = Array.from({ length: 7 }, (_, i) => {
@@ -128,16 +146,15 @@ export default function Dashboard() {
     return d.getDate();
   });
 
-  const avatar = getChosenAvatar(equippedHat);
+  const avatar1 = getChosenAvatar(equippedHat);
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate("avatar")}> <Image
-          source={avatar}
-          style={{ width: 50, height: 50 }}
-        /> </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate("Avatar")}> 
+          <Image source={avatar1} style={styles.avatarGuy}/> 
+        </TouchableOpacity>
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
             <Text style={styles.statText}>$ {earnings}</Text>
@@ -320,6 +337,10 @@ const styles = StyleSheet.create({
   avgBold: {
     fontWeight: "700",
     color: "#333",
+  },
+  avatarGuy: {
+    height: 50,
+    width: 50,
   },
   practiceButton: {
     backgroundColor: "#20826c",

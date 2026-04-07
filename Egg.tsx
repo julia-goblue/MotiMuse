@@ -82,13 +82,13 @@ export default function Egg() {
       <Text style={styles.line1}>The more you practice, the faster they grow! They’re here to listen to your music and help you play</Text>
 
       <View style={styles.characterWrap}>
-        <TouchableOpacity style={styles.character} onPress={() => setMuseyColor("P")}>
+        <TouchableOpacity style={styles.character} onPress={() => handleMuseyColor("P")}>
           <Image source={require("./assets/p_egg.png")}/>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.character} onPress={() => setMuseyColor("G")}>
+        <TouchableOpacity style={styles.character} onPress={() => handleMuseyColor("G")}>
           <Image source={require("./assets/g_egg.png")}/>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.character} onPress={() => setMuseyColor("B")}>
+        <TouchableOpacity style={styles.character} onPress={() => handleMuseyColor("B")}>
           <Image source={require("./assets/b_egg.png")}/>
         </TouchableOpacity>
       </View>

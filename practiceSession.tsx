@@ -1,0 +1,129 @@
+/**
+ * Local calendar YYYY-MM-DD for practice streaks / daily totals.
+ */
+export function toLocalYMD(d: Date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** YYYY-MM-DD of the Monday starting the local week (Mon–Sun). */
+export function mondayYMDLocal(d: Date = new Date()): string {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  const dow = x.getDay();
+  const offset = dow === 0 ? -6 : 1 - dow;
+  x.setDate(x.getDate() + offset);
+  return toLocalYMD(x);
+}
+
+type StatsSlice = {
+  minutesPracticedToday?: number;
+  minutesPracticedTodayDate?: string | null;
+  secondsPracticedToday?: number;
+};
+
+/** Minutes that count toward "today" when the stored date matches local today. */
+export function effectiveMinutesPracticedToday(
+  data: StatsSlice,
+  now: Date = new Date()
+): number {
+  const todayStr = toLocalYMD(now);
+  if (
+    data.minutesPracticedTodayDate != null &&
+    data.minutesPracticedTodayDate !== todayStr
+  ) {
+    return 0;
+  }
+  return data.minutesPracticedToday ?? 0;
+}
+
+export function effectiveSecondsPracticedToday(
+  data: StatsSlice,
+  now: Date = new Date()
+): number {
+  const todayStr = toLocalYMD(now);
+  if (
+    data.minutesPracticedTodayDate != null &&
+    data.minutesPracticedTodayDate !== todayStr
+  ) {
+    return 0;
+  }
+  return data.secondsPracticedToday ?? 0;
+}
+
+export type ApplyPracticeOpts = {
+  minutesPracticed: number;
+  /** Session length in seconds (remainder after full minutes); persisted for today totals. */
+  secondsPracticed?: number;
+  earnedDollars: number;
+  earnedStars: number;
+  now?: Date;
+};
+
+/**
+ * Merges a completed practice session into userStats (RTDB).
+ * Resets minutes (and seconds) when the calendar day changes, then increments.
+ * Returns whether this was the first positive-duration practice of that local day.
+ */
+export function applyPracticeSession(
+  current: Record<string, unknown> | null,
+  opts: ApplyPracticeOpts
+): { next: Record<string, unknown>; firstPracticeOfCalendarDay: boolean } {
+  const now = opts.now ?? new Date();
+  const todayStr = toLocalYMD(now);
+  const next: Record<string, unknown> =
+    current != null ? { ...current } : {};
+
+  const prevDate = next.minutesPracticedTodayDate as string | undefined | null;
+  let baseMins = (next.minutesPracticedToday as number) ?? 0;
+  let baseSecs = (next.secondsPracticedToday as number) ?? 0;
+  if (prevDate !== todayStr) {
+    baseMins = 0;
+    baseSecs = 0;
+  }
+  const sessionSecs = opts.secondsPracticed ?? 0;
+  const firstPracticeOfCalendarDay =
+    (opts.minutesPracticed > 0 || sessionSecs > 0) &&
+    baseMins === 0 &&
+    baseSecs === 0;
+
+  next.minutesPracticedToday = baseMins + opts.minutesPracticed;
+  next.secondsPracticedToday = baseSecs + sessionSecs;
+  next.minutesPracticedTodayDate = todayStr;
+
+  next.currentEarnings =
+    ((next.currentEarnings as number) ?? 0) + opts.earnedDollars;
+  next.totalStars = ((next.totalStars as number) ?? 0) + opts.earnedStars;
+
+  const dayIndex = (now.getDay() + 6) % 7;
+  const key = String(dayIndex);
+  const baseWeek: Record<string, number> = {
+    "0": 0,
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0,
+    "6": 0,
+  };
+  const prevWeek: Record<string, number> =
+    next.weeklyMinutes && typeof next.weeklyMinutes === "object"
+      ? { ...baseWeek, ...(next.weeklyMinutes as Record<string, number>) }
+      : { ...baseWeek };
+  prevWeek[key] = (prevWeek[key] ?? 0) + opts.minutesPracticed;
+  next.weeklyMinutes = prevWeek;
+
+  const weekStart = mondayYMDLocal(now);
+  if (next.practiceWeekStart !== weekStart) {
+    next.weeklyPracticeTotal = 0;
+    next.weeklySessionCount = 0;
+  }
+  next.practiceWeekStart = weekStart;
+  const sessionLengthMinutes =
+    opts.minutesPracticed + sessionSecs / 60;
+  next.weeklyPracticeTotal =
+    ((next.weeklyPracticeTotal as number) ?? 0) + sessionLengthMinutes;
+  next.weeklySessionCount = ((next.weeklySessionCount as number) ?? 0) + 1;
+
+  return { next, firstPracticeOfCalendarDay };
+}

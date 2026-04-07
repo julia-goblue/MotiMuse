@@ -1,6 +1,21 @@
-import React from "react";
-import { View, Text, StyleSheet, SafeAreaView } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  ActivityIndicator,
+  Pressable,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { getDatabase, ref, onValue, update } from "firebase/database";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { app } from "./firebaseConfig";
+import {
+  effectiveMinutesPracticedToday,
+  effectiveSecondsPracticedToday,
+} from "./practiceSession";
 
 const DARK_TEAL = "#40796E";
 const MINT = "#9FF2B8";
@@ -8,43 +23,259 @@ const DIVIDER = "#E8E8E8";
 
 const WEEK_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+function pad2(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+/** Local calendar YYYY-MM-DD */
+function toYMD(d: Date): string {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+function startOfWeekSunday(d: Date): Date {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  const dow = x.getDay();
+  x.setDate(x.getDate() - dow);
+  return x;
+}
+
+function addDays(d: Date, days: number): Date {
+  const x = new Date(d);
+  x.setDate(x.getDate() + days);
+  return x;
+}
+
+/** Mon=0 .. Sun=6 — matches PostPractice / Dashboard */
+function mondayIndexFromDate(d: Date): number {
+  return (d.getDay() + 6) % 7;
+}
+
+type UserStats = {
+  minutesPracticedToday?: number;
+  minutesPracticedTodayDate?: string | null;
+  secondsPracticedToday?: number;
+  dailyGoalMinutes?: number;
+  weeklyMinutes?: Record<string, number>;
+  streakCount?: number;
+  lastStreakQualifyDate?: string | null;
+};
+
+/** Any logged practice counts (≥1 min or ≥1 sec today; ≥1 min on past days in weekly buckets). */
+function practicedOnCalendarDay(
+  cellDate: Date,
+  today: Date,
+  stats: UserStats
+): boolean {
+  const cellY = toYMD(cellDate);
+  const todayY = toYMD(today);
+  const wm = stats.weeklyMinutes ?? {};
+  const key = String(mondayIndexFromDate(cellDate));
+
+  if (cellY > todayY) return false;
+  if (cellY === todayY) {
+    const mins = effectiveMinutesPracticedToday(stats, today);
+    const secs = effectiveSecondsPracticedToday(stats, today);
+    return mins >= 1 || secs >= 1;
+  }
+  return (wm[key] ?? 0) >= 1;
+}
+
+function practicedTodayForStreak(stats: UserStats, now: Date): boolean {
+  const mins = effectiveMinutesPracticedToday(stats, now);
+  const secs = effectiveSecondsPracticedToday(stats, now);
+  return mins >= 1 || secs >= 1;
+}
+
+type ReconcileResult = {
+  displayStreak: number;
+  persistStreak: number;
+  persistLast: string | null;
+};
+
+function reconcileStreak(stats: UserStats, now: Date): ReconcileResult {
+  const todayStr = toYMD(now);
+  const yesterday = addDays(now, -1);
+  const yesterdayStr = toYMD(yesterday);
+  const metToday = practicedTodayForStreak(stats, now);
+
+  const last = stats.lastStreakQualifyDate ?? null;
+  const stored = stats.streakCount ?? 0;
+
+  let nextStreak = stored;
+  let nextLast = last;
+
+  if (metToday) {
+    if (last === todayStr) {
+      nextStreak = stored;
+      nextLast = todayStr;
+    } else if (last === yesterdayStr) {
+      nextStreak = stored + 1;
+      nextLast = todayStr;
+    } else if (!last || last < yesterdayStr) {
+      nextStreak = 1;
+      nextLast = todayStr;
+    } else if (last > todayStr) {
+      nextStreak = 1;
+      nextLast = todayStr;
+    }
+  } else {
+    if (last && last < yesterdayStr) {
+      nextStreak = 0;
+      nextLast = null;
+    } else {
+      nextStreak = stored;
+      nextLast = last;
+    }
+  }
+
+  const displayStreak = Math.max(0, nextStreak);
+  return {
+    displayStreak,
+    persistStreak: nextStreak,
+    persistLast: nextLast,
+  };
+}
+
 export default function Streak() {
-  const streakDays = 7;
+  const navigation = useNavigation<any>();
+  const [uid, setUid] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<UserStats | null>(null);
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUid(u?.uid ?? null);
+      if (!u) setLoading(false);
+    });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    if (!uid) {
+      setStats(null);
+      return;
+    }
+    const r = ref(db, `userStats/${uid}`);
+    const off = onValue(
+      r,
+      (snap) => {
+        setStats(snap.exists() ? (snap.val() as UserStats) : {});
+        setLoading(false);
+        setNow(new Date());
+      },
+      () => setLoading(false)
+    );
+    return () => off();
+  }, [uid]);
+
+  const reconcile = useMemo(() => {
+    if (!stats) return null;
+    return reconcileStreak(stats, now);
+  }, [stats, now]);
+
+  useEffect(() => {
+    if (!uid || !stats || !reconcile) return;
+    const curS = stats.streakCount ?? 0;
+    const curL = stats.lastStreakQualifyDate ?? null;
+    const nextL = reconcile.persistLast ?? null;
+    const needWrite =
+      reconcile.persistStreak !== curS || nextL !== curL;
+    if (!needWrite) return;
+    update(ref(db, `userStats/${uid}`), {
+      streakCount: reconcile.persistStreak,
+      lastStreakQualifyDate: reconcile.persistLast,
+    }).catch((e) => console.error("Streak persist failed:", e));
+  }, [uid, stats, reconcile]);
+
+  const weekCells = useMemo(() => {
+    if (!stats) {
+      return WEEK_LABELS.map((label) => ({
+        label,
+        state: "future" as const,
+        done: false,
+      }));
+    }
+    const sun = startOfWeekSunday(now);
+    return WEEK_LABELS.map((label, i) => {
+      const cellDate = addDays(sun, i);
+      const cellY = toYMD(cellDate);
+      const todayY = toYMD(now);
+      let state: "past" | "today" | "future";
+      if (cellY > todayY) state = "future";
+      else if (cellY === todayY) state = "today";
+      else state = "past";
+      const done = practicedOnCalendarDay(cellDate, now, stats);
+      return { label, state, done };
+    });
+  }, [stats, now]);
+
+  const streakDays = reconcile?.displayStreak ?? 0;
+
+  const dayPhrase =
+    streakDays === 1 ? "1 day" : `${streakDays} days`;
 
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.body}>
         <View style={styles.main}>
-          <View style={styles.heroRow}>
-            <Text style={styles.heroNumber}>{streakDays}</Text>
-            <Ionicons name="flame" size={72} color={MINT} style={styles.flame} />
-          </View>
-
-          <View style={styles.weekRow}>
-            {WEEK_LABELS.map((label) => (
-              <View key={label} style={styles.dayCell}>
-                <Text style={styles.dayLabel}>{label}</Text>
-                <View style={styles.checkCircle}>
-                  <Ionicons name="checkmark" size={16} color={DARK_TEAL} />
-                </View>
+          {loading ? (
+            <ActivityIndicator size="large" color={DARK_TEAL} style={styles.loader} />
+          ) : (
+            <>
+              <View style={styles.heroRow}>
+                <Text style={styles.heroNumber}>{streakDays}</Text>
+                <Ionicons name="flame" size={72} color={MINT} style={styles.flame} />
               </View>
-            ))}
-          </View>
 
-          <Text style={styles.headline}>
-            You're on a{" "}
-            <Text style={styles.headlineBold}>{streakDays} day</Text> streak!
-          </Text>
-          <Text style={styles.subtext}>
-            Practice every day to build your streak.
-          </Text>
+              <View style={styles.weekRow}>
+                {weekCells.map((cell) => (
+                  <View key={cell.label} style={styles.dayCell}>
+                    <Text style={styles.dayLabel}>{cell.label}</Text>
+                    <View
+                      style={[
+                        styles.checkCircle,
+                        cell.state === "future" && styles.checkCircleFuture,
+                        !cell.done && cell.state !== "future" && styles.checkCircleEmpty,
+                      ]}
+                    >
+                      {cell.done ? (
+                        <Ionicons name="checkmark" size={16} color={DARK_TEAL} />
+                      ) : null}
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              {streakDays === 0 ? (
+                <Text style={styles.headline}>
+                  Meet your daily goal to start a streak.
+                </Text>
+              ) : (
+                <Text style={styles.headline}>
+                  You're on a{" "}
+                  <Text style={styles.headlineBold}>{dayPhrase}</Text> streak!
+                </Text>
+              )}
+              <Text style={styles.subtext}>
+                Practice every day to build your streak.
+              </Text>
+            </>
+          )}
         </View>
 
         <View style={styles.footer}>
           <View style={styles.divider} />
-          <View style={styles.continueButton}>
+          <Pressable
+            style={styles.continueButton}
+            onPress={() => navigation.navigate("MainTabs")}
+          >
             <Text style={styles.continueText}>Continue</Text>
-          </View>
+          </Pressable>
         </View>
       </View>
     </SafeAreaView>
@@ -64,6 +295,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 28,
     paddingBottom: 16,
+  },
+  loader: {
+    marginVertical: 48,
   },
   heroRow: {
     flexDirection: "row",
@@ -105,6 +339,13 @@ const styles = StyleSheet.create({
     borderColor: DARK_TEAL,
     alignItems: "center",
     justifyContent: "center",
+  },
+  checkCircleFuture: {
+    borderColor: "#C8D5D2",
+    backgroundColor: "#F5F8F7",
+  },
+  checkCircleEmpty: {
+    backgroundColor: "transparent",
   },
   headline: {
     textAlign: "center",

@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, Image, Pressable, StyleSheet } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 // import { getFirestore, doc, updateDoc, increment } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 // import { getDatabase, ref, runTransaction } from "firebase/database";
-import { getDatabase, ref, update, increment, onValue, runTransaction } from 'firebase/database';
+import { getDatabase, ref, onValue, runTransaction } from "firebase/database";
 import { app } from "./firebaseConfig";
-import {getChosenAvatar} from "./Store"
+import { getChosenAvatar } from "./Store";
+import { applyPracticeSession } from "./practiceSession";
 
 const PostPractice = () => {
   const navigation = useNavigation<any>();
@@ -16,6 +17,10 @@ const PostPractice = () => {
   const minutesPracticed = Math.floor(seconds / 60);
 
   const [equippedHat, setEquippedHat] = useState<string | null>(null);
+  const [practiceSaveState, setPracticeSaveState] = useState<
+    "idle" | "saving" | "done" | "error"
+  >("idle");
+  const [firstPracticeOfDay, setFirstPracticeOfDay] = useState(false);
   
      useEffect(() => {
     
@@ -97,45 +102,56 @@ const PostPractice = () => {
   //   savePractice();
   // }, []);
 
-  // Save minutes + rewards to Firestore and Realtime DB (dashboard/shop + weekly chart)
+  const savePractice = useCallback(async () => {
+    setPracticeSaveState("saving");
+    const earnedDollars = Math.floor(minutesPracticed * 10);
+    const earnedStars = Math.max(1, Math.floor(minutesPracticed / 10));
+
+    try {
+      const auth = getAuth(app);
+      const user = auth.currentUser;
+
+      const rtdb = getDatabase(app);
+      const userStatsRef = ref(rtdb, `userStats/${user?.uid}`);
+
+      let firstToday = false;
+      await runTransaction(userStatsRef, (current) => {
+        const { next, firstPracticeOfCalendarDay } = applyPracticeSession(
+          current as Record<string, unknown> | null,
+          {
+            minutesPracticed,
+            secondsPracticed: seconds,
+            earnedDollars,
+            earnedStars,
+            now: new Date(),
+          }
+        );
+        firstToday = firstPracticeOfCalendarDay;
+        return next;
+      });
+      setFirstPracticeOfDay(firstToday);
+      setPracticeSaveState("done");
+    } catch (err) {
+      console.error("Failed to save practice:", err);
+      setPracticeSaveState("error");
+    }
+  }, [minutesPracticed, seconds]);
+
   useEffect(() => {
-    const savePractice = async () => {
-      // used to be * 0.8 but for testing * 3
-      const earnedDollars = Math.floor(minutesPracticed * 10);
-      const earnedStars = Math.max(1, Math.floor(minutesPracticed / 10));
-
-      try {
-        const auth = getAuth(app);
-        const user = auth.currentUser;
-
-        const rtdb = getDatabase(app);
-        const userStatsRef = ref(rtdb, `userStats/${user?.uid}`);
-        const dayIndex = (new Date().getDay() + 6) % 7; // Mon=0 .. Sun=6
-        const key = String(dayIndex);
-
-        await runTransaction(userStatsRef, (current) => {
-          const next = current != null ? { ...current } : {};
-          next.minutesPracticedToday = (next.minutesPracticedToday ?? 0) + minutesPracticed;
-          next.currentEarnings = (next.currentEarnings ?? 0) + earnedDollars;
-          next.totalStars = (next.totalStars ?? 0) + earnedStars;
-
-          const prevWeek = next.weeklyMinutes && typeof next.weeklyMinutes === "object"
-            ? { ...next.weeklyMinutes }
-            : { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0 };
-          next.weeklyMinutes = { ...prevWeek, [key]: (prevWeek[key] ?? 0) + minutesPracticed };
-
-          return next;
-        });
-      } catch (err) {
-        console.error("Failed to save practice:", err);
-      }
-    };
-
     savePractice();
-  }, [minutesPracticed]);
+  }, [savePractice]);
 
-  const handleClaimRewards = () => {
-    navigation.navigate("MainTabs");
+  const handlePrimaryPress = () => {
+    if (practiceSaveState === "error") {
+      savePractice();
+      return;
+    }
+    if (practiceSaveState !== "done") return;
+    if (firstPracticeOfDay) {
+      navigation.navigate("Streak");
+    } else {
+      navigation.navigate("MainTabs");
+    }
   };
 
   return (
@@ -166,8 +182,21 @@ const PostPractice = () => {
         </View>
       </View>
 
-      <Pressable style={styles.claimButton} onPress={handleClaimRewards}>
-        <Text style={styles.claimText}>Claim Rewards</Text>
+      <Pressable
+        style={[
+          styles.claimButton,
+          practiceSaveState === "saving" && styles.claimButtonDisabled,
+        ]}
+        onPress={handlePrimaryPress}
+        disabled={practiceSaveState === "saving"}
+      >
+        <Text style={styles.claimText}>
+          {practiceSaveState === "saving"
+            ? "Saving…"
+            : practiceSaveState === "error"
+            ? "Try again"
+            : "Claim Rewards"}
+        </Text>
       </Pressable>
     </View>
   );
@@ -236,6 +265,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 60,
     borderRadius: 14,
     marginTop: 8,
+  },
+  claimButtonDisabled: {
+    opacity: 0.55,
   },
   claimText: {
     fontSize: 16,

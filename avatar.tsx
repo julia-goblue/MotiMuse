@@ -19,7 +19,9 @@ import {getChosenAvatar} from "./Store"
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-export default function avatar() {
+export default function Avatar() {
+  const navigation = useNavigation<any>();
+
   const [selectedHat, setSelectedHat] = useState<string | null>(null);
   const [earnings, setEarnings] = useState(0);
   const [stars, setStars] = useState(0);
@@ -77,15 +79,21 @@ export default function avatar() {
 
       {/* Big Avatar */}
       <View style={styles.ringContainer}>
-        <Image
-          source={getChosenAvatar(equippedHat)}
-          style={styles.big_img}
-        />
+        <Image source={getChosenAvatar(equippedHat)} style={styles.big_img}/>
       </View>
 
-      <Pressable style={styles.button} onPress={() => navigation.navigate("Dashboard")}>
-          <Text style={styles.buttonText}>{"Leave"}</Text>
+      
+      <View>
+        <Pressable onPress={() => navigation.navigate("Egg")}
+          style={styles.button}>
+          <Text style={styles.buttonText}>{"Egg!"}</Text>
         </Pressable>
+        
+          <Pressable style={styles.button} onPress={() => navigation.navigate("MainTabs")}>
+            <Text style={styles.buttonText}>{"Leave"}</Text>
+        </Pressable> 
+      </View>
+      
     </SafeAreaView>
   );
 }
@@ -125,9 +133,8 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   ringContainer: {
-    height: 140,
     alignItems: "center",
-    marginVertical: 30,
+    margin: 30,
   },
   barContainer: {
     flexDirection: "row",
@@ -155,14 +162,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  mainStore: {
-    //backgroundColor: "#c3bfbf",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginVertical: 10,
-    marginHorizontal: 10,
-    gap: 7,
-  },
   storeRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -182,20 +181,12 @@ const styles = StyleSheet.create({
     height: 90,
     resizeMode: "contain",
   },
-  selected_hat: { //when hats have transparent background and want selection shadow
-    width: 90,
-    height: 90,
-    resizeMode: "contain",
-    shadowColor: "#76b9d3",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6, 
-    elevation: 8, //added for Android
-  },
+
   big_img: {
     width: 250,
     height: 250,
     resizeMode: "contain",
+    alignItems: "center",
   },
   buttonRow: {
     flexDirection: "row",
@@ -208,6 +199,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     paddingVertical: 14,
     borderRadius: 12,
+    marginVertical: 10,
+    alignItems: "center",
   },
   buttonText: {
     fontSize: 16,

@@ -130,12 +130,12 @@ export default function Profile() {
         <View style={styles.body}>
           <Text style={styles.title}>Profile</Text>
 
-          <Pressable
+          {/* <Pressable
             style={styles.tempStreakBtn}
             onPress={() => navigation.navigate("Streak")}
           >
             <Text style={styles.tempStreakBtnText}>Temporary: open Streak screen</Text>
-          </Pressable>
+          </Pressable> */}
 
           <View style={styles.section}>
           <Text style={styles.label}>Name</Text>

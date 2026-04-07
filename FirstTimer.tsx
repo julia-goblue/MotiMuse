@@ -41,7 +41,7 @@ const WaveBar = ({ delay, isPlaying }: { delay: number; isPlaying: boolean }) =>
         width: 8,
         height: 60,
         backgroundColor: "#6EF2B2",
-        borderRadius: 4,
+        //borderRadius: 4,
         marginHorizontal: 3,
         transform: [{ scaleY: anim }],
       }}
@@ -100,7 +100,7 @@ const FirstTimer = () => {
     navigation.navigate("Hatching");
   };//TODO handle end practice only when 5min is up
 
-  const avatar = getChosenEgg(museyColor);//TODO getChosenEgg
+  const avatarEgg = getChosenEgg(museyColor);//TODO getChosenEgg
   const barHeights = [0.5, 0.8, 1, 0.6, 0.9, 0.7, 1, 0.5, 0.8, 0.6, 1, 0.7, 0.9, 0.5, 0.8];
 
   if(seconds == 0) handleEndPractice();
@@ -109,7 +109,7 @@ const FirstTimer = () => {
     <View style={styles.container}>
       <Text style={styles.pieceTitle}>Practice to hatch Musey</Text>
 
-      <Image source={avatar} style={styles.avatar} />
+      <Image source={avatarEgg} style={styles.avatarBig} />
 
       <View style={styles.timerBox}>
         <Text style={styles.timerText}>{formatTime()}</Text>
@@ -127,9 +127,9 @@ const FirstTimer = () => {
         <Pressable style={styles.button} onPress={handlePause}>
           <Text style={styles.buttonText}>{paused ? "Resume" : "Pause"}</Text>
         </Pressable>
-        {/* <Pressable style={styles.button} onPress={handleEndPractice}>
+         <Pressable style={styles.button} onPress={handleEndPractice}>
           <Text style={styles.buttonText}>End</Text>
-        </Pressable> */}
+        </Pressable> 
       </View>
     </View>
   );
@@ -155,11 +155,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#1a6b5a",
     paddingHorizontal: 32,
     paddingVertical: 12,
-    borderRadius: 14,
-    marginBottom: 6,
+    borderRadius: 10,
+    marginTop: 6,
   },
   timerText: {
-    fontSize: 48,
+    fontSize: 40,
     fontWeight: "700",
     color: "#EAFBB1",
     letterSpacing: 2,
@@ -183,9 +183,11 @@ const styles = StyleSheet.create({
     // marginBottom: 40,
     position: "relative",
   },
-  avatar: {
+  avatarBig: {
     width: 200,
     height: 200,
+    marginVertical: 10,
+    resizeMode: "contain",
   },
   bubbleRight: {
     position: "absolute",

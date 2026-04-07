@@ -166,7 +166,7 @@ export default function Store() {
           equippedHat: selectedHat,
         };
       });
-      setSelectedHat(equippedHat);
+      setSelectedHat(selectedHat);
     } catch (e) {
       console.error("Purchase failed:", e);
       Alert.alert("Purchase failed", "Something went wrong. Try again.");
@@ -249,14 +249,17 @@ export default function Store() {
         </View>
 
         <View style={styles.previewFrame}>
-          <Image source={previewAvatar} style={styles.previewAvatar} />
-          <View style={styles.equippedSlot}>
+      {viewMode === "closet" 
+        ? <Image source={getChosenAvatar(equippedHat)} style={styles.previewAvatar} />
+        : <Image source={previewAvatar} style={styles.previewAvatar} />
+}
+          {/* <View style={styles.equippedSlot}>
             {equippedHat ? (
               <Image source={HAT_IMAGES[equippedHat]} style={styles.equippedHatThumb} />
             ) : (
               <View style={styles.equippedPlaceholder} />
             )}
-          </View>
+          </View> */}
         </View>
 
         <ScrollView
@@ -266,17 +269,14 @@ export default function Store() {
         >
           {CATEGORIES.map((cat) => {
             const isActive = activeTab === cat.key;
-            const isHats = cat.key === "Hats";
             return (
               <Pressable
                 key={cat.key}
                 style={[
                   styles.categoryPill,
                   isActive && styles.categoryPillActive,
-                  !isHats && styles.categoryPillDisabled,
                 ]}
-                onPress={() => isHats && setActiveTab(cat.key)}
-                disabled={!isHats}
+                onPress={() => setActiveTab(cat.key)}
               >
                 <Ionicons
                   name={cat.icon}
@@ -291,13 +291,14 @@ export default function Store() {
           })}
         </ScrollView>
 
+      <View style={{ minHeight: 30 }}>
         {activeTab === "Hats" ? (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.cardsRow}
           >
-            {HAT_IDS.map((id) => {
+            {(viewMode === "closet" ? HAT_IDS.filter(id => ownedHats[id]) : HAT_IDS).map((id) => {
               const selected = selectedHat === id;
               const wearing = equippedHat === id;
               return (
@@ -315,13 +316,18 @@ export default function Store() {
               );
             })}
           </ScrollView>
-        ) : (
-          <View style={styles.comingSoon}>
-            <Text style={styles.comingSoonText}>More styles coming soon.</Text>
-          </View>
-        )}
+        ) : null}
+      </View>
 
-        <View style={styles.buttonRow}>
+
+
+      <View style={styles.buttonRow}>
+       {(viewMode === "closet" && HAT_IDS.filter(id => ownedHats[id]).length === 0) || activeTab !== "Hats" ? (
+            <View style={{ flex: 1, alignItems: "center" }}>
+              <Text style={styles.comingSoonText}>No items yet!</Text>
+            </View>
+      ) : (
+        <>
           <View style={styles.purchased}>
             <Text style={styles.priceText}>{selectedHat ? "$ " + HAT_PRICE : "Select an item!"}</Text>
           </View>
@@ -338,20 +344,22 @@ export default function Store() {
             {purchasing ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-          <Text style={styles.purchaseText}>
-            {equippedHat === selectedHat && selectedHat !== null
-              ? "Equipped"
-              : ownedHats[selectedHat ?? ""]
-              ? "Equip"
-              : purchasing
-              ? "..."
-              : canAfford
-              ? "Purchase"
-              : "Not enough"}
-          </Text>
+              <Text style={styles.purchaseText}>
+                {equippedHat === selectedHat && selectedHat !== null
+                  ? "Equipped"
+                  : ownedHats[selectedHat ?? ""]
+                  ? "Equip"
+                  : purchasing
+                  ? "..."
+                  : canAfford
+                  ? "Purchase"
+                  : "Not enough"}
+              </Text>
             )}
           </TouchableOpacity>
-        </View>
+        </>
+      )}
+    </View>
       </ScrollView>
     </SafeAreaView>
   );

@@ -20,7 +20,7 @@ import PracticeIntro from "./PracticeIntro";
 import Egg from "./Egg";
 import FirstTimer from "./FirstTimer";
 import Streak from "./Streak";
-import avatar from "./avatar";
+import Avatar from "./avatar";
 import Hatching from "./Hatching";
 
 const Stack = createNativeStackNavigator();
@@ -113,7 +113,7 @@ export default function App() {
         <Stack.Screen name="Streak" component={Streak} />
         <Stack.Screen name="Egg" component={Egg} />
         <Stack.Screen name="FirstTimer" component={FirstTimer} />
-        <Stack.Screen name="avatar" component={avatar} />
+        <Stack.Screen name="Avatar" component={Avatar} />
         <Stack.Screen name="Hatching" component={Hatching} />
 
       </Stack.Navigator>
