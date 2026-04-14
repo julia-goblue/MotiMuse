@@ -22,6 +22,7 @@ import FirstTimer from "./FirstTimer";
 import Streak from "./Streak";
 import Avatar from "./avatar";
 import Hatching from "./Hatching";
+import { FLOATING_TAB_BAR } from "./tabBarMetrics";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -35,10 +36,10 @@ function MainTabs() {
         tabBarShowLabel: false,
         tabBarStyle: {
           position: "absolute",
-          bottom: 18,
+          bottom: FLOATING_TAB_BAR.positionBottom,
           left: "7%",
           right: "7%",
-          height: 72,
+          height: FLOATING_TAB_BAR.height,
           borderRadius: 36,
           backgroundColor: "#EAFBB1",
           paddingHorizontal: 26,
