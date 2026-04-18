@@ -13,8 +13,12 @@ import { getDatabase, ref, onValue, update } from "firebase/database";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { app } from "./firebaseConfig";
 import {
+  addDays,
   effectiveMinutesPracticedToday,
   effectiveSecondsPracticedToday,
+  reconcileStreak,
+  toLocalYMD,
+  UserStatsForStreak,
 } from "./practiceSession";
 
 const DARK_TEAL = "#40796E";
@@ -26,15 +30,6 @@ const WEEK_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-function pad2(n: number) {
-  return String(n).padStart(2, "0");
-}
-
-/** Local calendar YYYY-MM-DD */
-function toYMD(d: Date): string {
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-}
-
 function startOfWeekSunday(d: Date): Date {
   const x = new Date(d);
   x.setHours(0, 0, 0, 0);
@@ -43,35 +38,19 @@ function startOfWeekSunday(d: Date): Date {
   return x;
 }
 
-function addDays(d: Date, days: number): Date {
-  const x = new Date(d);
-  x.setDate(x.getDate() + days);
-  return x;
-}
-
 /** Mon=0 .. Sun=6 — matches PostPractice / Dashboard */
 function mondayIndexFromDate(d: Date): number {
   return (d.getDay() + 6) % 7;
 }
 
-type UserStats = {
-  minutesPracticedToday?: number;
-  minutesPracticedTodayDate?: string | null;
-  secondsPracticedToday?: number;
-  dailyGoalMinutes?: number;
-  weeklyMinutes?: Record<string, number>;
-  streakCount?: number;
-  lastStreakQualifyDate?: string | null;
-};
-
 /** Any logged practice counts (≥1 min or ≥1 sec today; ≥1 min on past days in weekly buckets). */
 function practicedOnCalendarDay(
   cellDate: Date,
   today: Date,
-  stats: UserStats
+  stats: UserStatsForStreak
 ): boolean {
-  const cellY = toYMD(cellDate);
-  const todayY = toYMD(today);
+  const cellY = toLocalYMD(cellDate);
+  const todayY = toLocalYMD(today);
   const wm = stats.weeklyMinutes ?? {};
   const key = String(mondayIndexFromDate(cellDate));
 
@@ -84,67 +63,11 @@ function practicedOnCalendarDay(
   return (wm[key] ?? 0) >= 1;
 }
 
-function practicedTodayForStreak(stats: UserStats, now: Date): boolean {
-  const mins = effectiveMinutesPracticedToday(stats, now);
-  const secs = effectiveSecondsPracticedToday(stats, now);
-  return mins >= 1 || secs >= 1;
-}
-
-type ReconcileResult = {
-  displayStreak: number;
-  persistStreak: number;
-  persistLast: string | null;
-};
-
-function reconcileStreak(stats: UserStats, now: Date): ReconcileResult {
-  const todayStr = toYMD(now);
-  const yesterday = addDays(now, -1);
-  const yesterdayStr = toYMD(yesterday);
-  const metToday = practicedTodayForStreak(stats, now);
-
-  const last = stats.lastStreakQualifyDate ?? null;
-  const stored = stats.streakCount ?? 0;
-
-  let nextStreak = stored;
-  let nextLast = last;
-
-  if (metToday) {
-    if (last === todayStr) {
-      nextStreak = stored;
-      nextLast = todayStr;
-    } else if (last === yesterdayStr) {
-      nextStreak = stored + 1;
-      nextLast = todayStr;
-    } else if (!last || last < yesterdayStr) {
-      nextStreak = 1;
-      nextLast = todayStr;
-    } else if (last > todayStr) {
-      nextStreak = 1;
-      nextLast = todayStr;
-    }
-  } else {
-    if (last && last < yesterdayStr) {
-      nextStreak = 0;
-      nextLast = null;
-    } else {
-      nextStreak = stored;
-      nextLast = last;
-    }
-  }
-
-  const displayStreak = Math.max(0, nextStreak);
-  return {
-    displayStreak,
-    persistStreak: nextStreak,
-    persistLast: nextLast,
-  };
-}
-
 export default function Streak() {
   const navigation = useNavigation<any>();
   const [uid, setUid] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<UserStats | null>(null);
+  const [stats, setStats] = useState<UserStatsForStreak | null>(null);
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -164,7 +87,7 @@ export default function Streak() {
     const off = onValue(
       r,
       (snap) => {
-        setStats(snap.exists() ? (snap.val() as UserStats) : {});
+        setStats(snap.exists() ? (snap.val() as UserStatsForStreak) : {});
         setLoading(false);
         setNow(new Date());
       },
@@ -203,8 +126,8 @@ export default function Streak() {
     const sun = startOfWeekSunday(now);
     return WEEK_LABELS.map((label, i) => {
       const cellDate = addDays(sun, i);
-      const cellY = toYMD(cellDate);
-      const todayY = toYMD(now);
+      const cellY = toLocalYMD(cellDate);
+      const todayY = toLocalYMD(now);
       let state: "past" | "today" | "future";
       if (cellY > todayY) state = "future";
       else if (cellY === todayY) state = "today";

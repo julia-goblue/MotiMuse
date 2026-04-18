@@ -7,7 +7,14 @@ import { getAuth } from "firebase/auth";
 import { getDatabase, ref, onValue, runTransaction } from "firebase/database";
 import { app } from "./firebaseConfig";
 import { getChosenAvatar } from "./Store";
-import { applyPracticeSession } from "./practiceSession";
+import { applyPracticeSession, applyPostPracticeStats } from "./practiceSession";
+import {
+  achievementById,
+  getNewlyUnlockedAchievementIds,
+} from "./achievements";
+import AchievementUnlockedModal, {
+  UnlockedAchievementItem,
+} from "./AchievementUnlockedModal";
 
 const PostPractice = () => {
   const navigation = useNavigation<any>();
@@ -21,6 +28,9 @@ const PostPractice = () => {
     "idle" | "saving" | "done" | "error"
   >("idle");
   const [firstPracticeOfDay, setFirstPracticeOfDay] = useState(false);
+  const [newAchievements, setNewAchievements] = useState<
+    UnlockedAchievementItem[] | null
+  >(null);
   
      useEffect(() => {
     
@@ -115,7 +125,12 @@ const PostPractice = () => {
       const userStatsRef = ref(rtdb, `userStats/${user?.uid}`);
 
       let firstToday = false;
+      let unlockedIds: string[] = [];
       await runTransaction(userStatsRef, (current) => {
+        const now = new Date();
+        const prevAchievements = (
+          current as Record<string, unknown> | null
+        )?.achievements;
         const { next, firstPracticeOfCalendarDay } = applyPracticeSession(
           current as Record<string, unknown> | null,
           {
@@ -123,13 +138,31 @@ const PostPractice = () => {
             secondsPracticed: seconds,
             earnedDollars,
             earnedStars,
-            now: new Date(),
+            now,
           }
+        );
+        applyPostPracticeStats(current as Record<string, unknown> | null, next, {
+          now,
+          firstPracticeOfCalendarDay,
+          minutesPracticed,
+          secondsPracticed: seconds,
+        });
+        unlockedIds = getNewlyUnlockedAchievementIds(
+          prevAchievements,
+          next.achievements
         );
         firstToday = firstPracticeOfCalendarDay;
         return next;
       });
       setFirstPracticeOfDay(firstToday);
+      if (unlockedIds.length > 0) {
+        setNewAchievements(
+          unlockedIds.map((id) => ({
+            id,
+            title: achievementById(id)?.title ?? id,
+          }))
+        );
+      }
       setPracticeSaveState("done");
     } catch (err) {
       console.error("Failed to save practice:", err);
@@ -156,6 +189,11 @@ const PostPractice = () => {
 
   return (
     <View style={styles.container}>
+      <AchievementUnlockedModal
+        visible={newAchievements !== null && newAchievements.length > 0}
+        items={newAchievements ?? []}
+        onDismiss={() => setNewAchievements(null)}
+      />
       <Image
         source={avatar}
         style={styles.avatar}

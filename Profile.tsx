@@ -16,30 +16,18 @@ import { getDatabase, ref, onValue, update } from "firebase/database";
 import { app } from "./firebaseConfig";
 import { CommonActions, useNavigation } from "@react-navigation/native";
 import { floatingTabBarTopFromBottom } from "./tabBarMetrics";
+import { Ionicons } from "@expo/vector-icons";
+import { ACHIEVEMENTS } from "./achievements";
 
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-/** Habit & retention achievements — unlock flags live at `userStats/{uid}/achievements/{id}` */
-const ACHIEVEMENTS: { id: string; title: string; description: string }[] = [
-  { id: "first_step", title: "First step", description: "Complete your first practice session." },
-  { id: "goal_met", title: "Goal met", description: "Hit your daily goal once." },
-  { id: "three_day_rhythm", title: "Three-day rhythm", description: "Practice on three different days." },
-  { id: "week_of_showing_up", title: "Week of showing up", description: "Practice seven days in a row." },
-  { id: "streak_starter", title: "Streak starter", description: "Reach a 7-day streak." },
-  { id: "streak_keeper", title: "Streak keeper", description: "Reach a 30-day streak." },
-  { id: "perfect_week", title: "Perfect week", description: "Hit your daily goal every day Mon–Sun." },
-  { id: "bounce_back", title: "Bounce back", description: "Practice three days in a row after a week away." },
-  { id: "habit_stack", title: "Habit stack", description: "Four weeks in a row with at least five practice days each." },
-  { id: "milestone_minutes", title: "Milestone minutes", description: "Reach 50 hours of lifetime practice." },
-];
-
 /** Space between the bottom of the Log out button and the top of the tab bar. */
-const GAP_ABOVE_TAB = 10;
+const GAP_ABOVE_TAB = 4;
 /** Approximate Log out row height (padding + text + border). */
 const LOGOUT_ROW_HEIGHT = 54;
 /** Extra scroll space inside achievements so the last card clears the logout row. */
-const SCROLL_PAD_BELOW_ACHIEVEMENTS = 58;
+const SCROLL_PAD_BELOW_ACHIEVEMENTS = 52;
 
 export default function Profile() {
   const navigation = useNavigation<any>();
@@ -266,9 +254,25 @@ export default function Profile() {
                     key={a.id}
                     style={[
                       styles.achievementCard,
-                      !unlocked && styles.achievementCardLocked,
+                      unlocked
+                        ? styles.achievementCardUnlocked
+                        : styles.achievementCardLocked,
                     ]}
                   >
+                    <View
+                      style={[
+                        styles.achievementIconWrap,
+                        unlocked
+                          ? styles.achievementIconWrapUnlocked
+                          : styles.achievementIconWrapLocked,
+                      ]}
+                    >
+                      <Ionicons
+                        name={unlocked ? "checkmark-circle" : "lock-closed"}
+                        size={26}
+                        color={unlocked ? "#0d5c4d" : "#8BA9A2"}
+                      />
+                    </View>
                     <View style={styles.achievementTextCol}>
                       <Text
                         style={[
@@ -278,16 +282,25 @@ export default function Profile() {
                       >
                         {a.title}
                       </Text>
-                      <Text style={styles.achievementDesc}>{a.description}</Text>
+                      <Text
+                        style={[
+                          styles.achievementDesc,
+                          !unlocked && styles.achievementDescLocked,
+                        ]}
+                      >
+                        {a.description}
+                      </Text>
                     </View>
-                    <Text
-                      style={[
-                        styles.achievementBadge,
-                        unlocked && styles.achievementBadgeUnlocked,
-                      ]}
-                    >
-                      {unlocked ? "Done" : "Locked"}
-                    </Text>
+                    <View style={styles.achievementBadgeCol}>
+                      <Text
+                        style={[
+                          styles.achievementBadge,
+                          unlocked && styles.achievementBadgeUnlocked,
+                        ]}
+                      >
+                        {unlocked ? "Unlocked" : "Locked"}
+                      </Text>
+                    </View>
                   </View>
                 );
               })}
@@ -427,7 +440,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 0,
     marginTop: 4,
-    marginBottom: 4,
+    marginBottom: 16,
     padding: 12,
     paddingBottom: 10,
     borderRadius: 14,
@@ -466,45 +479,87 @@ const styles = StyleSheet.create({
   },
   achievementCard: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     backgroundColor: "#F7FBF9",
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 2,
     borderColor: "#EAFBB1",
     paddingVertical: 12,
-    paddingHorizontal: 14,
-    marginBottom: 8,
+    paddingHorizontal: 12,
+    marginBottom: 10,
+  },
+  achievementCardUnlocked: {
+    backgroundColor: "#E8FBF0",
+    borderWidth: 3,
+    borderColor: "#2E9D7A",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#1a6b5a",
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.12,
+        shadowRadius: 6,
+      },
+      android: { elevation: 3 },
+    }),
   },
   achievementCardLocked: {
-    opacity: 0.72,
-    borderColor: "#E5EED8",
+    opacity: 0.78,
+    borderColor: "#DCE8DD",
+    backgroundColor: "#F5F8F6",
+  },
+  achievementIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  achievementIconWrapUnlocked: {
+    backgroundColor: "#C8F5D9",
+    borderWidth: 2,
+    borderColor: "#6EF2B2",
+  },
+  achievementIconWrapLocked: {
+    backgroundColor: "#E8EEED",
+    borderWidth: 2,
+    borderColor: "#D0DAD8",
   },
   achievementTextCol: {
     flex: 1,
-    paddingRight: 10,
+    paddingRight: 8,
   },
   achievementName: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#1a6b5a",
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#0d4a3f",
     marginBottom: 4,
   },
   achievementNameLocked: {
-    color: "#3d6b62",
+    color: "#4a6b62",
+    fontWeight: "700",
   },
   achievementDesc: {
     fontSize: 13,
-    color: "#666",
+    color: "#3d534d",
     lineHeight: 18,
   },
-  achievementBadge: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#7AAEA3",
+  achievementDescLocked: {
+    color: "#7A908E",
+  },
+  achievementBadgeCol: {
+    alignSelf: "flex-start",
     marginTop: 2,
   },
+  achievementBadge: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.4,
+    color: "#7AAEA3",
+    textTransform: "uppercase",
+  },
   achievementBadgeUnlocked: {
-    color: "#1a6b5a",
+    color: "#0d5c4d",
   },
   logoutBtn: {
     paddingVertical: 14,

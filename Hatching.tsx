@@ -6,7 +6,14 @@ import { getAuth } from "firebase/auth";
 // import { getDatabase, ref, runTransaction } from "firebase/database";
 import { getDatabase, ref, onValue, runTransaction } from "firebase/database";
 import { app } from "./firebaseConfig";
-import { applyPracticeSession } from "./practiceSession";
+import { applyPracticeSession, applyPostPracticeStats } from "./practiceSession";
+import {
+  achievementById,
+  getNewlyUnlockedAchievementIds,
+} from "./achievements";
+import AchievementUnlockedModal, {
+  UnlockedAchievementItem,
+} from "./AchievementUnlockedModal";
 
 export function getMuseyColor(museyColor: string | null) {
   const avatars: Record<string, any> = {
@@ -32,6 +39,9 @@ const Hatching = () => {
     "idle" | "saving" | "done" | "error"
   >("idle");
   const [firstPracticeOfDay, setFirstPracticeOfDay] = useState(false);
+  const [newAchievements, setNewAchievements] = useState<
+    UnlockedAchievementItem[] | null
+  >(null);
   
      useEffect(() => {
     
@@ -91,7 +101,12 @@ const Hatching = () => {
       const userStatsRef = ref(rtdb, `userStats/${user?.uid}`);
 
       let firstToday = false;
+      let unlockedIds: string[] = [];
       await runTransaction(userStatsRef, (current) => {
+        const now = new Date();
+        const prevAchievements = (
+          current as Record<string, unknown> | null
+        )?.achievements;
         const { next, firstPracticeOfCalendarDay } = applyPracticeSession(
           current as Record<string, unknown> | null,
           {
@@ -99,13 +114,31 @@ const Hatching = () => {
             secondsPracticed: seconds,
             earnedDollars,
             earnedStars,
-            now: new Date(),
+            now,
           }
+        );
+        applyPostPracticeStats(current as Record<string, unknown> | null, next, {
+          now,
+          firstPracticeOfCalendarDay,
+          minutesPracticed,
+          secondsPracticed: seconds,
+        });
+        unlockedIds = getNewlyUnlockedAchievementIds(
+          prevAchievements,
+          next.achievements
         );
         firstToday = firstPracticeOfCalendarDay;
         return next;
       });
       setFirstPracticeOfDay(firstToday);
+      if (unlockedIds.length > 0) {
+        setNewAchievements(
+          unlockedIds.map((id) => ({
+            id,
+            title: achievementById(id)?.title ?? id,
+          }))
+        );
+      }
       setPracticeSaveState("done");
     } catch (err) {
       console.error("Failed to save practice:", err);
@@ -132,6 +165,11 @@ const Hatching = () => {
 
   return (
     <View style={styles.container}>
+      <AchievementUnlockedModal
+        visible={newAchievements !== null && newAchievements.length > 0}
+        items={newAchievements ?? []}
+        onDismiss={() => setNewAchievements(null)}
+      />
       <Image source={avatar} style={styles.avatarImg} />
 
       <View style={styles.timerBox}>
