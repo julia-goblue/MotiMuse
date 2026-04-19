@@ -17,6 +17,9 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { app } from "./firebaseConfig";
 
 const HAT_PRICE = 15;
+
+/** Shared height for price + action chips so the row stays visually even. */
+const STORE_ACTION_CHIP_HEIGHT = 44;
 const auth = getAuth(app);
 const db = getDatabase(app);
 
@@ -331,7 +334,7 @@ export default function Store() {
       ) : (
         <>
           <View style={styles.purchased}>
-            <Text style={styles.priceText} numberOfLines={2}>
+            <Text style={styles.priceText} numberOfLines={1}>
               {selectedHat ? "$ " + HAT_PRICE : "Select an item!"}
             </Text>
           </View>
@@ -348,7 +351,7 @@ export default function Store() {
             {purchasing ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={styles.purchaseText} numberOfLines={2}>
+              <Text style={styles.purchaseText} numberOfLines={1}>
                 {equippedHat === selectedHat && selectedHat !== null
                   ? "Equipped"
                   : ownedHats[selectedHat ?? ""]
@@ -562,6 +565,7 @@ const styles = StyleSheet.create({
   },
   itemCard: {
     width: 152,
+    minHeight: 168,
     backgroundColor: "#FFFCF3",
     borderRadius: 22,
     borderWidth: 2,
@@ -569,6 +573,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 10,
     alignItems: "center",
+    justifyContent: "flex-start",
   },
   itemCardSelected: {
     borderColor: "#1a6b5a",
@@ -611,11 +616,10 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     flexBasis: 0,
     minWidth: 0,
+    height: STORE_ACTION_CHIP_HEIGHT,
     backgroundColor: "#299564",
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
     borderRadius: 10,
-    minHeight: 40,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -629,18 +633,17 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
     width: "100%",
+    lineHeight: 18,
   },
   purchased: {
     flexGrow: 1,
     flexShrink: 1,
     flexBasis: 0,
     minWidth: 0,
+    height: STORE_ACTION_CHIP_HEIGHT,
     backgroundColor: "#EAFBB1",
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
     borderRadius: 10,
-    marginVertical: 8,
-    minHeight: 40,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -650,12 +653,14 @@ const styles = StyleSheet.create({
     color: "#333",
     textAlign: "center",
     width: "100%",
+    lineHeight: 18,
   },
   buttonRow: {
     flexDirection: "row",
-    alignItems: "stretch",
+    alignItems: "center",
     width: "100%",
     maxWidth: "100%",
     gap: 8,
+    marginTop: 8,
   },
 });
