@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getDatabase, ref, onValue, runTransaction } from "firebase/database";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { app } from "./firebaseConfig";
 
 const HAT_PRICE = 15;
@@ -264,6 +264,7 @@ export default function Store() {
 
         <ScrollView
           horizontal
+          style={styles.hScroll}
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoryScroll}
         >
@@ -295,6 +296,7 @@ export default function Store() {
         {activeTab === "Hats" ? (
           <ScrollView
             horizontal
+            style={styles.hScroll}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.cardsRow}
           >
@@ -329,7 +331,9 @@ export default function Store() {
       ) : (
         <>
           <View style={styles.purchased}>
-            <Text style={styles.priceText}>{selectedHat ? "$ " + HAT_PRICE : "Select an item!"}</Text>
+            <Text style={styles.priceText} numberOfLines={2}>
+              {selectedHat ? "$ " + HAT_PRICE : "Select an item!"}
+            </Text>
           </View>
           <TouchableOpacity
             style={[
@@ -344,7 +348,7 @@ export default function Store() {
             {purchasing ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={styles.purchaseText}>
+              <Text style={styles.purchaseText} numberOfLines={2}>
                 {equippedHat === selectedHat && selectedHat !== null
                   ? "Equipped"
                   : ownedHats[selectedHat ?? ""]
@@ -375,13 +379,13 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
     paddingTop: 8,
   },
-   header: {
-    marginHorizontal: 10,
-    marginTop: 8,
+  header: {
+    marginTop: 4,
     marginBottom: 10,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    width: "100%",
   },
   title: {
     fontSize: 22,
@@ -517,10 +521,15 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: "#D0D4CC",
   },
+  hScroll: {
+    width: "100%",
+    maxWidth: "100%",
+  },
   categoryScroll: {
     gap: 10,
     paddingBottom: 14,
-    paddingRight: 8,
+    paddingLeft: 4,
+    paddingRight: 20,
   },
   categoryPill: {
     flexDirection: "row",
@@ -548,7 +557,8 @@ const styles = StyleSheet.create({
   cardsRow: {
     gap: 12,
     paddingVertical: 4,
-    paddingRight: 8,
+    paddingLeft: 4,
+    paddingRight: 20,
   },
   itemCard: {
     width: 152,
@@ -597,13 +607,15 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   purchase: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minWidth: 0,
     backgroundColor: "#299564",
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 10,
-    marginLeft: 8,
-    width: 175,
-    height: 40,
+    minHeight: 40,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -613,27 +625,37 @@ const styles = StyleSheet.create({
   },
   purchaseText: {
     color: "white",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
+    textAlign: "center",
+    width: "100%",
   },
   purchased: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minWidth: 0,
     backgroundColor: "#EAFBB1",
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 10,
-    margin: 8,
-    width: 175,
-    height: 40,
+    marginVertical: 8,
+    minHeight: 40,
     justifyContent: "center",
     alignItems: "center",
   },
   priceText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
     color: "#333",
+    textAlign: "center",
+    width: "100%",
   },
   buttonRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "stretch",
+    width: "100%",
+    maxWidth: "100%",
+    gap: 8,
   },
 });

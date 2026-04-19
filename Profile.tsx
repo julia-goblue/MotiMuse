@@ -16,7 +16,7 @@ import { getDatabase, ref, onValue, update } from "firebase/database";
 import { app } from "./firebaseConfig";
 import { CommonActions, useNavigation } from "@react-navigation/native";
 import { floatingTabBarTopFromBottom } from "./tabBarMetrics";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { ACHIEVEMENTS } from "./achievements";
 
 const auth = getAuth(app);
