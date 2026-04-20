@@ -173,11 +173,11 @@ const Hatching = () => {
       <Image source={avatar} style={styles.avatarImg} />
 
       <View style={styles.timerBox}>
-        <Text style={styles.timerText}>{formatTime()}</Text>
+        <Text style={styles.timerText}>{"5:00"}</Text>
       </View>
       {/* <Text style={styles.minutesLabel}>minutes played</Text> */}
       <Text style={styles.minutesLabel}>
-        {Math.floor(seconds / 60) === 0 ? "seconds played" : "minutes played"}
+        {Math.floor(301 / 60) === 0 ? "seconds played" : "minutes played"}
       </Text>
 
       <Text style={styles.message}>

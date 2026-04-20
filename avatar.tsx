@@ -27,6 +27,7 @@ export default function Avatar() {
   const [stars, setStars] = useState(0);
   const [purchasing, setPurchasing] = useState(false);
   const [equippedHat, setEquippedHat] = useState<string | null>(null);
+  const [museyColor, setMuseyColor] = useState<string | null>(null);
   const [ownedHats, setOwnedHats] = useState<Record<string, boolean>>({});
   const [activeTab, setActiveTab] = useState("Hats");
   const [uid, setUid] = useState<string | null>(null);
@@ -52,6 +53,7 @@ export default function Avatar() {
         setStars(data.totalStars ?? 0);
         setEquippedHat(data.equippedHat ?? null);
         setOwnedHats(data.ownedHats ?? {});
+        setMuseyColor(data.museyColor ?? null);
       } else {
         setEarnings(0);
         setStars(0);
@@ -79,7 +81,7 @@ export default function Avatar() {
 
       {/* Big Avatar */}
       <View style={styles.ringContainer}>
-        <Image source={getChosenAvatar(equippedHat)} style={styles.big_img}/>
+        <Image source={getChosenAvatar(equippedHat, museyColor)} style={styles.big_img}/>
       </View>
 
       

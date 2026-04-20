@@ -20,6 +20,7 @@ const LIGHT_YELLOW = "#EAFBB1";
 export default function PracticeIntro() {
   const navigation = useNavigation<any>();
   const [equippedHat, setEquippedHat] = useState<string | null>(null);
+  const [museyColor, setMuseyColor] = useState<string | null>(null);
 
   
 
@@ -43,6 +44,7 @@ export default function PracticeIntro() {
         console.log("Fetched data:", data); // Log the data to see what you received
 
         setEquippedHat(data.equippedHat ?? null);
+        setMuseyColor(data.museyColor ?? null);
 
       } 
     }, (databaseError) => {
@@ -60,7 +62,7 @@ export default function PracticeIntro() {
     };
   }, []);
 
-   const avatar = getChosenAvatar(equippedHat);
+   const avatar = getChosenAvatar(equippedHat, museyColor);
 
   return (
     <SafeAreaView style={styles.container}>

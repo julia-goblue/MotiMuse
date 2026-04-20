@@ -24,6 +24,7 @@ const PostPractice = () => {
   const minutesPracticed = Math.floor(seconds / 60);
 
   const [equippedHat, setEquippedHat] = useState<string | null>(null);
+  const [museyColor, setMuseyColor] = useState<string | null>(null);
   const [practiceSaveState, setPracticeSaveState] = useState<
     "idle" | "saving" | "done" | "error"
   >("idle");
@@ -51,6 +52,7 @@ const PostPractice = () => {
             console.log("Fetched data:", data); // Log the data to see what you received
     
             setEquippedHat(data.equippedHat ?? null);
+            setMuseyColor(data.museyColor ?? null);
     
           } 
         }, (databaseError) => {
@@ -68,7 +70,7 @@ const PostPractice = () => {
         };
       }, []);
     
-  const avatar = getChosenAvatar(equippedHat);
+  const avatar = getChosenAvatar(equippedHat, museyColor);
   
   
 
