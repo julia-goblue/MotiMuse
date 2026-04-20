@@ -13,10 +13,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getDatabase, ref, onValue, runTransaction } from "firebase/database";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { app } from "./firebaseConfig";
 
 const HAT_PRICE = 15;
+
+/** Shared height for price + action chips so the row stays visually even. */
+const STORE_ACTION_CHIP_HEIGHT = 44;
 const auth = getAuth(app);
 const db = getDatabase(app);
 
@@ -318,6 +321,7 @@ export default function Store() {
 
         <ScrollView
           horizontal
+          style={styles.hScroll}
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoryScroll}
         >
@@ -349,6 +353,7 @@ export default function Store() {
         {activeTab === "Hats" ? (
           <ScrollView
             horizontal
+            style={styles.hScroll}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.cardsRow}
           >
@@ -383,7 +388,9 @@ export default function Store() {
       ) : (
         <>
           <View style={styles.purchased}>
-            <Text style={styles.priceText}>{selectedHat ? "$ " + HAT_PRICE : "Select an item!"}</Text>
+            <Text style={styles.priceText} numberOfLines={1}>
+              {selectedHat ? "$ " + HAT_PRICE : "Select an item!"}
+            </Text>
           </View>
           <TouchableOpacity
             style={[
@@ -398,7 +405,7 @@ export default function Store() {
             {purchasing ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={styles.purchaseText}>
+              <Text style={styles.purchaseText} numberOfLines={1}>
                 {equippedHat === selectedHat && selectedHat !== null
                   ? "Equipped"
                   : ownedHats[selectedHat ?? ""]
@@ -429,13 +436,13 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
     paddingTop: 8,
   },
-   header: {
-    marginHorizontal: 10,
-    marginTop: 8,
+  header: {
+    marginTop: 4,
     marginBottom: 10,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    width: "100%",
   },
   title: {
     fontSize: 22,
@@ -571,10 +578,15 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: "#D0D4CC",
   },
+  hScroll: {
+    width: "100%",
+    maxWidth: "100%",
+  },
   categoryScroll: {
     gap: 10,
     paddingBottom: 14,
-    paddingRight: 8,
+    paddingLeft: 4,
+    paddingRight: 20,
   },
   categoryPill: {
     flexDirection: "row",
@@ -602,10 +614,12 @@ const styles = StyleSheet.create({
   cardsRow: {
     gap: 12,
     paddingVertical: 4,
-    paddingRight: 8,
+    paddingLeft: 4,
+    paddingRight: 20,
   },
   itemCard: {
     width: 152,
+    minHeight: 168,
     backgroundColor: "#FFFCF3",
     borderRadius: 22,
     borderWidth: 2,
@@ -613,6 +627,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 10,
     alignItems: "center",
+    justifyContent: "flex-start",
   },
   itemCardSelected: {
     borderColor: "#1a6b5a",
@@ -651,13 +666,14 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   purchase: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minWidth: 0,
+    height: STORE_ACTION_CHIP_HEIGHT,
     backgroundColor: "#299564",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
     borderRadius: 10,
-    marginLeft: 8,
-    width: 175,
-    height: 40,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -667,27 +683,38 @@ const styles = StyleSheet.create({
   },
   purchaseText: {
     color: "white",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
+    textAlign: "center",
+    width: "100%",
+    lineHeight: 18,
   },
   purchased: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minWidth: 0,
+    height: STORE_ACTION_CHIP_HEIGHT,
     backgroundColor: "#EAFBB1",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
     borderRadius: 10,
-    margin: 8,
-    width: 175,
-    height: 40,
     justifyContent: "center",
     alignItems: "center",
   },
   priceText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
     color: "#333",
+    textAlign: "center",
+    width: "100%",
+    lineHeight: 18,
   },
   buttonRow: {
     flexDirection: "row",
     alignItems: "center",
+    width: "100%",
+    maxWidth: "100%",
+    gap: 8,
+    marginTop: 8,
   },
 });
