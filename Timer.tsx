@@ -55,6 +55,7 @@ const Timer = () => {
   const [paused, setPaused] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const [equippedHat, setEquippedHat] = useState<string | null>(null);
+  const [museyColor, setMuseyColor] = useState<string | null>(null);
 
   useEffect(() => {
     // const db = getDatabase(app);
@@ -68,6 +69,7 @@ const Timer = () => {
       if (snapshot.exists()) {
         const data = snapshot.val();
         setEquippedHat(data.equippedHat ?? null);
+        setMuseyColor(data.museyColor ?? null);
       }
     });
     return () => unsubscribe();
@@ -100,7 +102,7 @@ const Timer = () => {
     navigation.navigate("PostPractice", { seconds });
   };
 
-  const avatar = getChosenAvatar(equippedHat);
+  const avatar = getChosenAvatar(equippedHat, museyColor);
   const barHeights = [0.5, 0.8, 1, 0.6, 0.9, 0.7, 1, 0.5, 0.8, 0.6, 1, 0.7, 0.9, 0.5, 0.8];
 
   return (

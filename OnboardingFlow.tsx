@@ -164,7 +164,7 @@ export function PracticeMinutesScreen() {
             } catch (e) {
               console.error("Failed to save goal:", e);
             }
-            navigation.navigate("MainTabs");
+            navigation.navigate("Egg");
           }}
         >
           <Text style={styles.bottomButtonText}>Finish</Text>

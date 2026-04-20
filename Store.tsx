@@ -64,7 +64,7 @@ const CATEGORIES: {
   { key: "Extras", label: "Extras", icon: "diamond-outline" },
 ];
 
-export function getChosenAvatar(selectedHat: string | null) {
+export function getChosenAvatar(selectedHat: string | null, museyColor: string | null) {
   const avatars: Record<string, any> = {
     OB: require("./assets/OB_guy.png"),
     BB: require("./assets/BB_guy.png"),
@@ -79,6 +79,58 @@ export function getChosenAvatar(selectedHat: string | null) {
     GC: require("./assets/GC_guy.png"),
     PC: require("./assets/PC_guy.png"),
   };
+
+  const pavatars: Record<string, any> = {
+    OB: require("./assets/OB_pguy.png"),
+    BB: require("./assets/BB_pguy.png"),
+    GB: require("./assets/GB_pguy.png"),
+    PB: require("./assets/PB_pguy.png"),
+    OG: require("./assets/OG_pguy.png"),
+    BG: require("./assets/BG_pguy.png"),
+    GG: require("./assets/GG_pguy.png"),
+    PG: require("./assets/PG_pguy.png"),
+    OC: require("./assets/OC_pguy.png"),
+    BC: require("./assets/BC_pguy.png"),
+    GC: require("./assets/GC_pguy.png"),
+    PC: require("./assets/PC_pguy.png"),
+  };
+
+  const bavatars: Record<string, any> = {
+    OB: require("./assets/OB_bguy.png"),
+    BB: require("./assets/BB_bguy.png"),
+    GB: require("./assets/GB_bguy.png"),
+    PB: require("./assets/PB_bguy.png"),
+    OG: require("./assets/OG_bguy.png"),
+    BG: require("./assets/BG_bguy.png"),
+    GG: require("./assets/GG_bguy.png"),
+    PG: require("./assets/PG_bguy.png"),
+    OC: require("./assets/OC_bguy.png"),
+    BC: require("./assets/BC_bguy.png"),
+    GC: require("./assets/GC_bguy.png"),
+    PC: require("./assets/PC_bguy.png"),
+  };
+
+  if (museyColor == "P"){
+    if (!selectedHat) {
+      return require("./assets/p_avatar.png");
+    }
+
+    return pavatars[selectedHat];
+    }
+  else if (museyColor == "B"){
+    if (!selectedHat) {
+      return require("./assets/b_avatar.png");
+    }
+
+    return bavatars[selectedHat];
+  }
+  else{
+    if (!selectedHat) {
+      return require("./assets/g_avatar.png");
+    }
+
+    return avatars[selectedHat];
+  }
 
   if (!selectedHat) {
     return require("./assets/Avatar 1.png");
@@ -97,6 +149,7 @@ export default function Store() {
   const [activeTab, setActiveTab] = useState("Hats");
   const [viewMode, setViewMode] = useState<"shop" | "closet">("closet");
   const [uid, setUid] = useState<string | null>(null);
+  const [museyColor, setMuseyColor] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -117,6 +170,7 @@ export default function Store() {
         setStars(data.totalStars ?? 0);
         setEquippedHat(data.equippedHat ?? null);
         setOwnedHats(data.ownedHats ?? {});
+        setMuseyColor(data.museyColor);
       } else {
         setEarnings(0);
         setStars(0);
@@ -178,7 +232,7 @@ export default function Store() {
   const canAfford = earnings >= HAT_PRICE;
 
   const previewHat = !selectedHat ? equippedHat : selectedHat;
-  const previewAvatar = getChosenAvatar(previewHat);
+  const previewAvatar = getChosenAvatar(previewHat, museyColor);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -250,7 +304,7 @@ export default function Store() {
 
         <View style={styles.previewFrame}>
       {viewMode === "closet" 
-        ? <Image source={getChosenAvatar(equippedHat)} style={styles.previewAvatar} />
+        ? <Image source={getChosenAvatar(equippedHat, museyColor)} style={styles.previewAvatar} />
         : <Image source={previewAvatar} style={styles.previewAvatar} />
 }
           {/* <View style={styles.equippedSlot}>
