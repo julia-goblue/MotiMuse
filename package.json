@@ -2,7 +2,7 @@
   "name": "motimuse",
   "version": "1.0.0",
   "main": "index.ts",
-  "homepage": "https://julia-goblue.github.io/motimuse",
+  "homepage": "https://julia-goblue.github.io/MotiMuse",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
