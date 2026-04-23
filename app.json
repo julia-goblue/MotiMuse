@@ -17,9 +17,7 @@
       "bundler": "metro",
       "publicPath": "/"
     },
-    "experiments": {
-      "baseUrl": "/MotiMuse"
-    },
+    
     "ios": {
       "supportsTablet": true
     },
