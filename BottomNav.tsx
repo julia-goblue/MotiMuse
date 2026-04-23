@@ -1,6 +1,6 @@
 import React from "react";
 import { View, StyleSheet, TouchableOpacity, Platform } from "react-native";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { Home, Music, Shirt, User } from "lucide-react-native";
 
 type TabKey = "home" | "music" | "shirt" | "profile";
 
@@ -20,7 +20,7 @@ export default function BottomNav({ activeTab, onTabPress }: Props) {
           onPress={() => onTabPress("home")}
           activeOpacity={0.8}
         >
-          <Ionicons name="home-outline" size={26} color={iconColor("home")} />
+          <Home size={26} color={iconColor("home")} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -28,7 +28,7 @@ export default function BottomNav({ activeTab, onTabPress }: Props) {
           onPress={() => onTabPress("music")}
           activeOpacity={0.8}
         >
-          <Ionicons name="musical-notes-outline" size={26} color={iconColor("music")} />
+          <Music size={26} color={iconColor("music")} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -36,7 +36,7 @@ export default function BottomNav({ activeTab, onTabPress }: Props) {
           onPress={() => onTabPress("shirt")}
           activeOpacity={0.8}
         >
-          <Ionicons name="shirt-outline" size={26} color={iconColor("shirt")} />
+          <Shirt size={26} color={iconColor("shirt")} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -44,7 +44,7 @@ export default function BottomNav({ activeTab, onTabPress }: Props) {
           onPress={() => onTabPress("profile")}
           activeOpacity={0.8}
         >
-          <Ionicons name="person-outline" size={26} color={iconColor("profile")} />
+          <User size={26} color={iconColor("profile")} />
         </TouchableOpacity>
       </View>
     </View>

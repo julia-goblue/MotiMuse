@@ -13,7 +13,17 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getDatabase, ref, onValue, runTransaction } from "firebase/database";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import type { LucideIcon } from "lucide-react-native";
+import {
+  Circle,
+  Gem,
+  Gift,
+  Link2,
+  Shirt,
+  ShoppingBag,
+  Sparkles,
+  Star,
+} from "lucide-react-native";
 import { app } from "./firebaseConfig";
 
 const HAT_PRICE = 15;
@@ -58,13 +68,13 @@ const HAT_NAMES: Record<string, string> = {
 const CATEGORIES: {
   key: string;
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: LucideIcon;
 }[] = [
-  { key: "Hats", label: "Hats", icon: "ellipse-outline" },
-  { key: "Bowties", label: "Bowties", icon: "link-outline" },
-  { key: "Suits", label: "Suits", icon: "shirt-outline" },
-  { key: "Held", label: "Held", icon: "sparkles-outline" },
-  { key: "Extras", label: "Extras", icon: "diamond-outline" },
+  { key: "Hats", label: "Hats", icon: Circle },
+  { key: "Bowties", label: "Bowties", icon: Link2 },
+  { key: "Suits", label: "Suits", icon: Shirt },
+  { key: "Held", label: "Held", icon: Sparkles },
+  { key: "Extras", label: "Extras", icon: Gem },
 ];
 
 export function getChosenAvatar(selectedHat: string | null, museyColor: string | null) {
@@ -253,11 +263,11 @@ export default function Store() {
           </View>
           <View style={styles.statsRow}>
             <View style={styles.statCapsule}>
-              <Ionicons name="bag-handle-outline" size={16} color="#333" />
+              <ShoppingBag size={16} color="#333" />
               <Text style={styles.statText}>{earnings}</Text>
             </View>
             <View style={styles.statCapsule}>
-              <Ionicons name="star" size={16} color="#333" />
+              <Star size={16} color="#333" />
               <Text style={styles.statText}>{stars}</Text>
             </View>
           </View>
@@ -281,8 +291,7 @@ export default function Store() {
             style={[styles.modePill, viewMode === "shop" && styles.modePillActive]}
             onPress={() => setViewMode("shop")}
           >
-            <Ionicons
-              name="gift-outline"
+            <Gift
               size={18}
               color={viewMode === "shop" ? "#1a6b5a" : "#666"}
             />
@@ -294,8 +303,7 @@ export default function Store() {
             style={[styles.modePill, viewMode === "closet" && styles.modePillActive]}
             onPress={() => setViewMode("closet")}
           >
-            <Ionicons
-              name="shirt-outline"
+            <Shirt
               size={18}
               color={viewMode === "closet" ? "#1a6b5a" : "#666"}
             />
@@ -327,6 +335,7 @@ export default function Store() {
         >
           {CATEGORIES.map((cat) => {
             const isActive = activeTab === cat.key;
+            const CatIcon = cat.icon;
             return (
               <Pressable
                 key={cat.key}
@@ -336,8 +345,7 @@ export default function Store() {
                 ]}
                 onPress={() => setActiveTab(cat.key)}
               >
-                <Ionicons
-                  name={cat.icon}
+                <CatIcon
                   size={15}
                   color={isActive ? "#FFFFFF" : "#666"}
                 />

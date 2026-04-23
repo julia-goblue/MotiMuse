@@ -1,17 +1,11 @@
 import React from "react";
-import {
-  ActivityIndicator,
-  Platform,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-} from "react-native";
-import { useFonts } from "expo-font";
+import { Platform, StyleSheet, useWindowDimensions, View } from "react-native";
+import type { LucideIcon } from "lucide-react-native";
+import { Box, Home, Music, User } from "lucide-react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import Ionicons from "@expo/vector-icons/Ionicons";
 
 import Dashboard from "./Dashboard";
 import Timer from "./Timer";
@@ -73,12 +67,6 @@ const webPhoneStyles = StyleSheet.create({
     minHeight: 0,
     minWidth: 0,
   },
-  fontFallback: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#ffffff",
-  },
 });
 
 function WebPhoneShell({ children }: { children: React.ReactNode }) {
@@ -130,18 +118,17 @@ function MainTabs() {
           justifyContent: "space-between",
         },
         tabBarIcon: ({ focused }) => {
-          let iconName: keyof typeof Ionicons.glyphMap = "home-outline";
-
+          const color = focused ? "#EAFBB1" : "#1a6b5a";
+          let TabIcon: LucideIcon = Home;
           if (route.name === "Dashboard") {
-            iconName = "home-outline";
+            TabIcon = Home;
           } else if (route.name === "PracticeIntro") {
-            iconName = "musical-notes-outline";
+            TabIcon = Music;
           } else if (route.name === "Store") {
-            iconName = "cube-outline";
+            TabIcon = Box;
           } else if (route.name === "Profile") {
-            iconName = "person-outline";
+            TabIcon = User;
           }
-
           return (
             <View
               style={{
@@ -153,11 +140,7 @@ function MainTabs() {
                 backgroundColor: focused ? "#1a6b5a" : "transparent",
               }}
             >
-              <Ionicons
-                name={iconName}
-                size={26}
-                color={focused ? "#EAFBB1" : "#1a6b5a"}
-              />
+              <TabIcon size={26} color={color} />
             </View>
           );
         },
@@ -178,16 +161,6 @@ function MainTabs() {
 }
 
 export default function App() {
-  const [fontsLoaded, fontError] = useFonts({ ...Ionicons.font });
-
-  if (!fontsLoaded && !fontError) {
-    return (
-      <View style={webPhoneStyles.fontFallback}>
-        <ActivityIndicator size="large" color="#1a6b5a" />
-      </View>
-    );
-  }
-
   return (
     <WebPhoneShell>
       <SafeAreaProvider>

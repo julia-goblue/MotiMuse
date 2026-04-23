@@ -8,7 +8,7 @@ import {
   ScrollView,
   Platform,
 } from "react-native";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { CheckCircle2, Trophy } from "lucide-react-native";
 
 export type UnlockedAchievementItem = { id: string; title: string };
 
@@ -36,7 +36,7 @@ export default function AchievementUnlockedModal({
         <Pressable style={StyleSheet.absoluteFill} onPress={onDismiss} />
         <View style={styles.card}>
           <View style={styles.iconRing}>
-            <Ionicons name="trophy" size={40} color="#C9A227" />
+            <Trophy size={40} color="#C9A227" />
           </View>
           <Text style={styles.kicker}>
             {plural ? "Achievements unlocked!" : "Achievement unlocked!"}
@@ -53,8 +53,7 @@ export default function AchievementUnlockedModal({
           >
             {items.map((item) => (
               <View key={item.id} style={styles.listRow}>
-                <Ionicons
-                  name="checkmark-circle"
+                <CheckCircle2
                   size={22}
                   color="#1a6b5a"
                   style={styles.listCheck}

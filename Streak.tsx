@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   Pressable,
 } from "react-native";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { Check, Flame } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import { getDatabase, ref, onValue, update } from "firebase/database";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
@@ -152,7 +152,7 @@ export default function Streak() {
             <>
               <View style={styles.heroRow}>
                 <Text style={styles.heroNumber}>{streakDays}</Text>
-                <Ionicons name="flame" size={72} color={MINT} style={styles.flame} />
+                <Flame size={72} color={MINT} style={styles.flame} fill={MINT} />
               </View>
 
               <View style={styles.weekRow}>
@@ -167,7 +167,7 @@ export default function Streak() {
                       ]}
                     >
                       {cell.done ? (
-                        <Ionicons name="checkmark" size={16} color={DARK_TEAL} />
+                        <Check size={16} color={DARK_TEAL} />
                       ) : null}
                     </View>
                   </View>

@@ -16,7 +16,7 @@ import { getDatabase, ref, onValue, update } from "firebase/database";
 import { app } from "./firebaseConfig";
 import { CommonActions, useNavigation } from "@react-navigation/native";
 import { floatingTabBarTopFromBottom } from "./tabBarMetrics";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { CheckCircle2, Lock } from "lucide-react-native";
 import { ACHIEVEMENTS } from "./achievements";
 
 const auth = getAuth(app);
@@ -267,11 +267,11 @@ export default function Profile() {
                           : styles.achievementIconWrapLocked,
                       ]}
                     >
-                      <Ionicons
-                        name={unlocked ? "checkmark-circle" : "lock-closed"}
-                        size={26}
-                        color={unlocked ? "#0d5c4d" : "#8BA9A2"}
-                      />
+                      {unlocked ? (
+                        <CheckCircle2 size={26} color="#0d5c4d" />
+                      ) : (
+                        <Lock size={26} color="#8BA9A2" />
+                      )}
                     </View>
                     <View style={styles.achievementTextCol}>
                       <Text
